@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AES Encryption Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .encrypt-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .encrypt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .encrypt-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+        }
+
+        .result-card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .state-matrix {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            max-width: 300px;
+            margin: 15px 0;
+        }
+
+        .state-byte {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+        }
+
+        .state-byte:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .round-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .round-header {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .key-expansion {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .key-round {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .key-round h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #f5c6cb;
+            margin: 15px 0;
+        }
+
+        .final-result {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .final-result h3 {
+            border: none;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .final-ciphertext {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            word-break: break-all;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .state-matrix {
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 AES Encryption Tool</h1>
+            <p>Advanced Encryption Standard (AES-128, AES-192, AES-256) with Round-by-Round Visualization</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="message">Message (16 bytes in Hexadecimal):</label>
+                    <input type="text" id="message" placeholder="e.g., 00112233445566778899aabbccddeeff" maxlength="32">
+                </div>
+
+                <div class="form-group">
+                    <label for="key">Key (Hexadecimal):</label>
+                    <input type="text" id="key" placeholder="Enter key based on AES variant selected below">
+                </div>
+
+                <div class="form-group">
+                    <label for="keySize">AES Variant:</label>
+                    <select id="keySize">
+                        <option value="128">AES-128 (16 bytes / 32 hex chars)</option>
+                        <option value="192">AES-192 (24 bytes / 48 hex chars)</option>
+                        <option value="256">AES-256 (32 bytes / 64 hex chars)</option>
+                    </select>
+                </div>
+
+                <button class="encrypt-btn" onclick="encrypt()">
+                    🔒 Encrypt Message
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Encrypting your message...</p>
+            </div>
+
+            <div class="results-section" id="results">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('rounds')">Encryption Rounds</button>
+                    <button class="tab" onclick="showTab('keys')">Key Expansion</button>
+                </div>
+
+                <div id="rounds" class="tab-content active">
+                    <div class="result-card">
+                        <h3>Initial State</h3>
+                        <div class="state-matrix" id="initialState"></div>
+                    </div>
+                    <div id="roundResults"></div>
+                </div>
+
+                <div id="keys" class="tab-content">
+                    <div class="result-card">
+                        <h3>Key Expansion</h3>
+                        <div id="keyExpansion"></div>
+                    </div>
+                </div>
+
+                <div class="final-result" id="finalResult" style="display: none;">
+                    <h3>🎉 Final Ciphertext</h3>
+                    <div class="final-ciphertext" id="finalCiphertext"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateKeyPlaceholder() {
+            const keySize = document.getElementById('keySize').value;
+            const keyInput = document.getElementById('key');
+            const expectedLength = keySize / 4;
+            
+            keyInput.placeholder = `e.g., ${'0'.repeat(expectedLength)} (${expectedLength} hex characters)`;
+            keyInput.maxLength = expectedLength;
+        }
+
+        document.getElementById('keySize').addEventListener('change', updateKeyPlaceholder);
+        updateKeyPlaceholder();
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function createStateMatrix(state, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const byte = document.createElement('div');
+                    byte.className = 'state-byte';
+                    byte.textContent = state[i][j];
+                    container.appendChild(byte);
+                }
+            }
+        }
+
+        function createKeyMatrix(key, container) {
+            const keyDiv = document.createElement('div');
+            keyDiv.className = 'key-round';
+            
+            const header = document.createElement('h4');
+            header.textContent = `Round ${key.round}`;
+            keyDiv.appendChild(header);
+            
+            const matrix = document.createElement('div');
+            matrix.className = 'state-matrix';
+            
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const byte = document.createElement('div');
+                    byte.className = 'state-byte';
+                    byte.textContent = key.key[i][j];
+                    matrix.appendChild(byte);
+                }
+            }
+            
+            keyDiv.appendChild(matrix);
+            container.appendChild(keyDiv);
+        }
+
+        async function encrypt() {
+            const message = document.getElementById('message').value.trim();
+            const key = document.getElementById('key').value.trim();
+            const keySize = document.getElementById('keySize').value;
+
+            // Validate inputs
+            if (!message || !key) {
+                alert('Please enter both message and key');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('finalResult').style.display = 'none';
+
+            try {
+                const response = await fetch('/encrypt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        key: key,
+                        key_size: keySize
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Encryption failed');
+                }
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').classList.add('show');
+
+            // Display initial state
+            createStateMatrix(data.initial_state, 'initialState');
+
+            // Display rounds
+            const roundResults = document.getElementById('roundResults');
+            roundResults.innerHTML = '';
+
+            let currentRound = -1;
+            let roundSection = null;
+
+            data.rounds.forEach(round => {
+                if (round.round !== currentRound) {
+                    currentRound = round.round;
+                    roundSection = document.createElement('div');
+                    roundSection.className = 'round-section';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'round-header';
+                    header.textContent = `Round ${round.round}`;
+                    roundSection.appendChild(header);
+                    
+                    roundResults.appendChild(roundSection);
+                }
+
+                const operationDiv = document.createElement('div');
+                operationDiv.innerHTML = `
+                    <strong>${round.operation}:</strong>
+                    <div class="state-matrix" id="round-${round.round}-${round.operation.replace(/\s+/g, '')}"></div>
+                `;
+                roundSection.appendChild(operationDiv);
+
+                // Create matrix for this operation
+                setTimeout(() => {
+                    createStateMatrix(round.state, `round-${round.round}-${round.operation.replace(/\s+/g, '')}`);
+                }, 100);
+            });
+
+            // Display key expansion
+            const keyExpansion = document.getElementById('keyExpansion');
+            keyExpansion.innerHTML = '';
+            data.expanded_key.forEach(key => {
+                createKeyMatrix(key, keyExpansion);
+            });
+
+            // Display final result
+            document.getElementById('finalCiphertext').textContent = data.final_ciphertext;
+            document.getElementById('finalResult').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
