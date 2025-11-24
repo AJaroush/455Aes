@@ -15,7 +15,8 @@ import {
   Sun,
   Moon,
   Calendar,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -37,6 +38,7 @@ const Navbar = () => {
     { path: '/aes-history', label: 'AES History', icon: Calendar },
     { path: '/compare', label: 'Compare', icon: GitCompare },
     { path: '/tutorial', label: 'Tutorial', icon: BookOpen },
+    { path: '/attacks', label: 'Attacks', icon: AlertTriangle },
     { path: '/about', label: 'About', icon: Info },
   ];
 

@@ -46,7 +46,8 @@ const About = () => {
     { name: 'Ahmad Jaroush', role: 'Developer' },
     { name: 'Carl Wakim', role: 'Developer' },
     { name: 'Lea Nasrallah', role: 'Developer' },
-    { name: 'Yasmina El Jamal', role: 'Developer' }
+    { name: 'Yasmina El Jamal', role: 'Developer' },
+    { name: 'Tatiana Kaado', role: 'Developer' }
   ];
 
   return (
@@ -95,7 +96,7 @@ const About = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex flex-nowrap justify-center gap-6 overflow-x-auto">
             {teamMembers.map((member, index) => (
               <motion.div
                 key={index}
@@ -103,7 +104,7 @@ const About = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
                 viewport={{ once: true }}
-                className="text-center p-6 glass rounded-xl border border-white/20 hover:border-white/40 transition-all duration-300"
+                className="text-center p-6 glass rounded-xl border border-white/20 hover:border-white/40 transition-all duration-300 flex-shrink-0 w-[180px]"
               >
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg mb-4">
                   <User className="h-6 w-6 text-white" />
@@ -325,7 +326,7 @@ const About = () => {
             Developed for educational purposes in cryptography
           </p>
           <p className="text-white/60 text-sm">
-            © 2024 AES Encryption Tool. Academic project.
+            © 2025 AES Encryption Tool. Academic project.
           </p>
         </motion.div>
       </div>

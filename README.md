@@ -1,318 +1,181 @@
-# AES Encryption Tool - Desktop Application
+# AES Encryption Tool
 
-A professional, market-ready desktop application for AES encryption and decryption with a clean, modern interface. Supports AES-128, AES-192, and AES-256 encryption with CBC and ECB modes.
+A comprehensive, educational AES (Advanced Encryption Standard) encryption and decryption tool with interactive visualizations, file support, and multiple encryption modes.
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
-- **AES Encryption/Decryption**: Full support for AES-128, AES-192, and AES-256
-- **Multiple Modes**: CBC (recommended) and ECB modes
-- **File & Text Support**: Encrypt/decrypt both files and text input
-- **Drag & Drop**: Intuitive file input with drag-and-drop support
-- **PKCS7 Padding**: Proper padding implementation for secure encryption
+- **AES Encryption/Decryption**: Support for AES-128, AES-192, and AES-256
+- **Multiple Encryption Modes**: CBC, ECB, CTR, CFB, OFB, XTS, and GCM
+- **File Encryption**: Encrypt and decrypt files with drag-and-drop support
+- **Password-Based Keys**: PBKDF2 key derivation from passwords
+- **HMAC Integrity**: Optional HMAC-SHA-256 for authenticated encryption
 
-### Security Features
-- **Secure Key Generation**: Cryptographically secure random key and IV generation
-- **SHA-256 Hashing**: Integrity verification with SHA-256 checksums
-- **Key Management**: Copy, save, and show/hide keys with secure storage options
-- **ECB Warning**: Visual warnings when using less secure ECB mode
+### Interactive Visualizations
+- **Round-by-Round Visualization**: Step-through view of all AES operations
+- **Matrix Visualization**: 4x4 state matrix transformations
+- **Key Expansion**: Visual representation of key schedule generation
+- **Real-time Updates**: Watch encryption/decryption happen step-by-step
 
 ### User Experience
-- **Modern UI**: Clean, professional interface with light/dark theme support
-- **Real-time Feedback**: Encryption speed indicators and status updates
-- **Export Functionality**: Export encrypted files and metadata
-- **Help System**: Built-in help section explaining AES and usage
-- **Tooltips**: Contextual help throughout the interface
+- **Step-by-Step Guides**: Interactive guides for encryption and decryption
+- **Input Flexibility**: Support for text messages or file uploads
+- **Unlimited Length**: Automatic padding for messages and ciphertext of any length
+- **History Tracking**: Save and view encryption/decryption history
+- **PDF Export**: Export results and history as PDF documents
+- **Dark/Light Mode**: Full theme support
 
-### Desktop Features
-- **Standalone Executable**: No installation required - just double-click to run
-- **Offline Operation**: Works completely offline - no internet required
-- **Cross-Platform**: Supports Windows, macOS, and Linux
-- **File System Integration**: Native file dialogs for save/open operations
+### Security Features
+- **Secure Random Generation**: Cryptographically secure random keys and IVs
+- **Password Strength Meter**: Real-time password strength assessment
+- **Best Practices**: Educational content on secure implementation
+- **Attack Documentation**: Comprehensive guide on AES attacks and mitigations
 
-## 📦 Installation
+## Installation
 
-### Option 1: Download Pre-built Executable
+### Prerequisites
+- Node.js (v14 or higher)
+- npm (v6 or higher)
 
-1. Download the executable for your platform:
-   - **Windows**: `AES-Encryption-Tool-Setup.exe`
-   - **macOS**: `AES-Encryption-Tool.dmg`
-   - **Linux**: `AES-Encryption-Tool.AppImage`
+### Setup
 
-2. Run the installer (Windows/macOS) or make executable and run (Linux):
-   ```bash
-   chmod +x AES-Encryption-Tool.AppImage
-   ./AES-Encryption-Tool.AppImage
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/AJaroush/455Aes.git
+cd EECE455P2
+```
 
-### Option 2: Build from Source
+2. Install all dependencies:
+```bash
+npm run install-all
+```
 
-#### Prerequisites
-- Node.js 16+ and npm
-- Git (optional)
+This will install dependencies for both the server and client.
 
-#### Build Steps
+## Usage
 
-1. **Clone or download the repository**
-   ```bash
-   git clone <repository-url>
-   cd EECE455P2
-   ```
+### Development Mode
 
-2. **Install dependencies**
-   ```bash
-   npm run install-all
-   ```
+Start both the server and client in development mode:
 
-3. **Build the React frontend**
-   ```bash
-   npm run build
-   ```
+```bash
+npm run dev
+```
 
-4. **Build the desktop executable**
+This will:
+- Start the backend server on `http://localhost:8080`
+- Start the React frontend on `http://localhost:3000`
 
-   For macOS:
-   ```bash
-   npm run build-electron-mac
-   ```
+### Production Build
 
-   For Windows:
-   ```bash
-   npm run build-electron-win
-   ```
+Build the client for production:
 
-   For Linux:
-   ```bash
-   npm run build-electron-linux
-   ```
+```bash
+npm run build
+```
 
-   For all platforms:
-   ```bash
-   npm run build-electron
-   ```
+Start the production server:
 
-5. **Find your executable**
-   - The built executables will be in the `dist/` directory
-   - Windows: `.exe` installer
-   - macOS: `.dmg` file
-   - Linux: `.AppImage` file
+```bash
+npm start
+```
 
-## 🎯 Usage Guide
+The application will be available at `http://localhost:8080`
 
-### Quick Start
-
-1. **Launch the Application**
-   - Double-click the executable to start
-   - The application will open in a new window
-
-2. **Choose Operation Mode**
-   - Click **Encrypt** to encrypt files/text
-   - Click **Decrypt** to decrypt encrypted files
-
-3. **Configure AES Settings**
-   - Select key size: 128, 192, or 256 bits
-   - Choose encryption mode: CBC (recommended) or ECB
-   - Generate a secure key or enter your own
-
-4. **Input Your Data**
-   - **For Files**: Drag and drop a file or click "Browse Files"
-   - **For Text**: Type or paste text in the text area
-
-5. **Process**
-   - Click the **Encrypt** or **Decrypt** button
-   - Wait for processing to complete
-
-6. **Save Results**
-   - Click **Download** to save the encrypted/decrypted file
-   - Click **Export** to save metadata and results as JSON
-
-### Detailed Features
-
-#### Key Management
-
-**Generate Random Key**
-- Click the ⚡ (Zap) icon to generate a cryptographically secure random key
-- The IV (Initialization Vector) will be auto-generated for CBC mode
-
-**Copy Key**
-- Click the 📋 (Copy) icon to copy the key to clipboard
-- Use this to share keys securely (use secure channels!)
-
-**Save Key**
-- Click the 💾 (Save) icon to save the key to a text file
-- **IMPORTANT**: Store this file securely - losing the key means losing access to encrypted data
-
-**Show/Hide Key**
-- Click the 👁️ (Eye) icon to toggle key visibility
-- Useful for verifying keys without exposing them on screen
-
-#### Encryption Modes
-
-**CBC Mode (Recommended)**
-- Cipher Block Chaining mode
-- More secure - same plaintext produces different ciphertext
-- Requires an IV (Initialization Vector)
-- IV is auto-generated if not provided
-
-**ECB Mode (Not Recommended)**
-- Electronic Codebook mode
-- Less secure - reveals patterns in plaintext
-- Warning displayed when selected
-- Use only for educational purposes
-
-#### File Operations
-
-**Drag & Drop**
-- Drag files directly onto the drop zone
-- Supports any file type and size (up to 100MB)
-
-**File Encryption**
-- Original file is encrypted with AES
-- Output file has `.aes` extension
-- SHA-256 hash calculated before and after encryption
-
-**File Decryption**
-- Upload encrypted `.aes` file
-- Provide the same key and IV used for encryption
-- Original file is restored
-
-#### Security Best Practices
-
-1. **Always Use CBC Mode** for production encryption
-2. **Keep Keys Secure** - Never share keys over insecure channels
-3. **Backup Keys** - Save keys in multiple secure locations
-4. **Use Strong Keys** - Always use randomly generated keys
-5. **Verify Hashes** - Check SHA-256 hashes to verify file integrity
-6. **Never Reuse IVs** - Generate a new IV for each encryption
-
-## 🔧 Development
-
-### Running in Development Mode
-
-1. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-   This starts both the backend server and React frontend
-
-2. **Run Electron in development**
-   ```bash
-   npm run electron-dev
-   ```
-   This starts the server and launches Electron
-
-3. **Access the web version**
-   - Open `http://localhost:8080` in your browser
-
-### Project Structure
+## Project Structure
 
 ```
 EECE455P2/
-├── electron.js              # Electron main process
-├── preload.js               # Electron preload script
-├── server.js                # Express backend server
-├── aes_implementation.js    # Original AES implementation
-├── aes_enhanced.js          # Enhanced AES with CBC/decryption
-├── package.json             # Root package configuration
-├── client/                  # React frontend
+├── client/                 # React frontend application
 │   ├── src/
-│   │   ├── pages/
-│   │   │   ├── Desktop.js   # Main desktop interface
-│   │   │   ├── Encrypt.js   # Educational encryption page
-│   │   │   └── ...
-│   │   └── components/
-│   └── build/               # Production build
-└── dist/                    # Built executables
+│   │   ├── components/     # Reusable React components
+│   │   ├── pages/         # Page components
+│   │   ├── contexts/      # React contexts (Theme, etc.)
+│   │   └── App.js         # Main app component
+│   └── package.json
+├── server.js              # Express backend server
+├── aes_implementation.js  # Core AES implementation
+├── aes_enhanced.js        # Enhanced AES with padding and CBC
+├── aes_advanced.js        # Advanced modes (CTR, CFB, OFB, XTS, GCM)
+└── package.json           # Root package.json
 ```
 
-## 📋 API Endpoints
+## Technologies Used
 
-The application includes a REST API for encryption operations:
+### Frontend
+- **React**: UI framework
+- **React Router**: Client-side routing
+- **Tailwind CSS**: Utility-first CSS framework
+- **Framer Motion**: Animation library
+- **Lucide React**: Icon library
+- **React Hot Toast**: Toast notifications
+- **jsPDF**: PDF generation
+- **Axios**: HTTP client
 
-- `POST /api/encrypt` - Encrypt text (16-byte blocks)
-- `POST /api/encrypt-file` - Encrypt files
-- `POST /api/decrypt-file` - Decrypt files
-- `POST /api/generate-key` - Generate random key/IV
-- `GET /api/health` - Health check
+### Backend
+- **Node.js**: Runtime environment
+- **Express**: Web framework
+- **Multer**: File upload handling
+- **Crypto**: Node.js crypto module
+- **Argon2**: Advanced key derivation
+- **Node-Forge**: Cryptographic utilities
 
-## 🛠️ Technical Details
+## API Endpoints
 
-### AES Implementation
-- Pure JavaScript implementation
-- Supports AES-128, AES-192, AES-256
-- PKCS7 padding for variable-length data
-- CBC mode with proper IV handling
-- Full decryption support
+- `POST /api/encrypt` - Encrypt a message
+- `POST /api/decrypt` - Decrypt ciphertext
+- `POST /api/encrypt-file` - Encrypt a file
+- `POST /api/decrypt-file` - Decrypt a file
+- `POST /api/encrypt-advanced` - Advanced encryption modes
+- `POST /api/derive-key` - Derive key from password (PBKDF2)
+- `POST /api/derive-key-advanced` - Advanced key derivation (Argon2)
+- `POST /api/calculate-hmac` - Calculate HMAC
+- `POST /api/password-strength` - Check password strength
+- `POST /api/avalanche-demo` - Demonstrate avalanche effect
+- `POST /api/generate-key` - Generate random key
 
-### Technologies Used
-- **Frontend**: React, Tailwind CSS, Framer Motion
-- **Backend**: Node.js, Express
-- **Desktop**: Electron
-- **Cryptography**: Custom AES implementation + Node.js crypto
+## Pages
 
-### Security Considerations
-- Keys never leave the local machine
-- All encryption happens client-side
-- No data sent to external servers
-- Cryptographically secure random number generation
-- SHA-256 integrity verification
+- **Home** (`/`): Landing page with feature overview
+- **Encrypt** (`/encrypt`): Encrypt messages or files
+- **Decrypt** (`/decrypt`): Decrypt ciphertext or files
+- **Compare** (`/compare`): Compare AES variants side-by-side
+- **Tutorial** (`/tutorial`): Interactive AES tutorial
+- **Attacks** (`/attacks`): Documentation on AES attacks and security
+- **History** (`/history`): View encryption/decryption history
+- **AES History** (`/aes-history`): Historical context of AES
+- **About** (`/about`): Project information and team
 
-## 📝 Version History
+## Team
 
-### Version 2.0.0 (Current)
-- ✅ Desktop application with Electron
-- ✅ File encryption/decryption support
-- ✅ Drag-and-drop file input
-- ✅ Secure key generation
-- ✅ SHA-256 hashing
-- ✅ Light/dark theme
-- ✅ Export functionality
-- ✅ Help system
-- ✅ CBC and ECB modes
-- ✅ PKCS7 padding
+- Ahmad Jaroush - Developer
+- Carl Wakim - Developer
+- Lea Nasrallah - Developer
+- Yasmina El Jamal - Developer
+- Tatiana Kaado - Developer
 
-### Version 1.0.0
-- Initial web-based version
-- Text encryption only
-- Educational visualization
+## Educational Purpose
 
-## 🐛 Troubleshooting
+This project is designed for educational purposes to help students and developers understand:
+- How AES encryption works internally
+- The step-by-step process of encryption/decryption
+- Different AES modes and their use cases
+- Security best practices
+- Common attack vectors and mitigations
 
-### Application Won't Start
-- Ensure Node.js 16+ is installed
-- Check that all dependencies are installed: `npm run install-all`
-- Try rebuilding: `npm run build` then `npm run electron`
+## Security Note
 
-### Encryption Fails
-- Verify key length matches selected key size
-- Ensure IV is provided for CBC mode decryption
-- Check that file size is under 100MB limit
+While this tool implements AES correctly, it's important to note:
+- This is an educational tool, not production-grade security software
+- Always use established cryptographic libraries in production
+- Follow security best practices for key management
+- Keep cryptographic implementations updated
 
-### File Won't Decrypt
-- Verify you're using the same key and IV used for encryption
-- Ensure the file wasn't corrupted
-- Check that encryption mode matches (CBC vs ECB)
+## License
 
-## 📄 License
+MIT License
 
-MIT License - See LICENSE file for details
+## Version
 
-## 🤝 Contributing
+2.0.0
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📧 Support
-
-For issues, questions, or feature requests, please open an issue on the repository.
-
-## 🙏 Acknowledgments
-
-- AES algorithm specification (NIST FIPS 197)
-- Electron team for the desktop framework
-- React and Tailwind CSS communities
-
----
-
-**⚠️ Security Notice**: This tool is provided for educational and legitimate use only. Always follow local laws and regulations regarding encryption software.
-
-# 455Aes

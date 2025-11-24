@@ -79,7 +79,7 @@ const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound })
         className={`matrix-cell w-10 h-10 flex items-center justify-center rounded-lg font-mono font-bold text-xs transition-all duration-300 ${
           isHighlighted
             ? `bg-gradient-to-r ${getHighlightColor()} text-white shadow-lg`
-            : 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+            : 'bg-white/10 dark:bg-white/10 text-gray-900 dark:text-white border border-gray-300 dark:border-white/20 hover:bg-gray-200 dark:hover:bg-white/20'
         }`}
       >
         {value}
@@ -100,16 +100,16 @@ const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound })
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Round {round.round} - {round.operation}
           </h3>
-          <p className="text-sm text-blue-300 mt-1">{round.description}</p>
+          <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">{round.description}</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => toggleDetails(index)}
-          className="p-2 glass rounded-lg text-white hover:bg-white/20 transition-all duration-300"
+          className="p-2 glass rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300"
         >
           <Info className="h-4 w-4" />
         </motion.button>
@@ -140,7 +140,7 @@ const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound })
             transition={{ duration: 0.3 }}
             className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10"
           >
-            <h4 className="text-white font-medium mb-2">Technical Details:</h4>
+            <h4 className="text-gray-900 dark:text-white font-medium mb-2">Technical Details:</h4>
             <ul className="text-sm text-blue-200 space-y-1">
               {round.operation === 'SubBytes' && (
                 <>
@@ -197,7 +197,7 @@ const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound })
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleReset}
-            className="flex items-center space-x-2 px-4 py-2 glass text-white rounded-lg hover:bg-white/20 transition-all duration-300"
+            className="flex items-center space-x-2 px-4 py-2 glass text-gray-900 dark:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300"
           >
             <RotateCcw className="h-4 w-4" />
             <span>Reset</span>
@@ -215,7 +215,7 @@ const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound })
             <ChevronLeft className="h-4 w-4" />
           </motion.button>
 
-          <div className="text-white font-mono text-sm px-3">
+          <div className="text-gray-900 dark:text-white font-mono text-sm px-3">
             {currentRound + 1} / {allRounds.length}
           </div>
 
@@ -231,11 +231,11 @@ const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound })
         </div>
 
         <div className="flex items-center space-x-2">
-          <label className="text-white text-sm">Speed:</label>
+          <label className="text-gray-900 dark:text-white text-sm">Speed:</label>
           <select
             value={speed}
             onChange={(e) => setSpeed(parseInt(e.target.value))}
-            className="bg-white/10 border border-white/20 rounded text-white text-sm px-2 py-1 focus:outline-none focus:border-blue-500"
+            className="bg-white/10 dark:bg-white/10 border border-gray-300 dark:border-white/20 rounded text-gray-900 dark:text-white text-sm px-2 py-1 focus:outline-none focus:border-blue-500"
           >
             <option value={500}>Fast</option>
             <option value={1000}>Normal</option>
@@ -268,31 +268,31 @@ const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound })
 
       {/* Round Summary */}
       <div className="glass rounded-lg p-6 border border-white/20">
-        <h4 className="text-white font-semibold mb-4">Encryption Summary</h4>
+        <h4 className="text-gray-900 dark:text-white font-semibold mb-4">Encryption Summary</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="p-3 bg-blue-500/20 rounded-lg">
             <div className="text-2xl font-bold text-blue-300">
               {allRounds.filter(r => r.operation === 'SubBytes').length}
             </div>
-            <div className="text-sm text-white">SubBytes</div>
+            <div className="text-sm text-gray-900 dark:text-white">SubBytes</div>
           </div>
           <div className="p-3 bg-orange-500/20 rounded-lg">
             <div className="text-2xl font-bold text-orange-300">
               {allRounds.filter(r => r.operation === 'ShiftRows').length}
             </div>
-            <div className="text-sm text-white">ShiftRows</div>
+            <div className="text-sm text-gray-900 dark:text-white">ShiftRows</div>
           </div>
           <div className="p-3 bg-purple-500/20 rounded-lg">
             <div className="text-2xl font-bold text-purple-300">
               {allRounds.filter(r => r.operation === 'MixColumns').length}
             </div>
-            <div className="text-sm text-white">MixColumns</div>
+            <div className="text-sm text-gray-900 dark:text-white">MixColumns</div>
           </div>
           <div className="p-3 bg-green-500/20 rounded-lg">
             <div className="text-2xl font-bold text-green-300">
               {allRounds.filter(r => r.operation.includes('AddRoundKey')).length}
             </div>
-            <div className="text-sm text-white">AddRoundKey</div>
+            <div className="text-sm text-gray-900 dark:text-white">AddRoundKey</div>
           </div>
         </div>
       </div>

@@ -65,7 +65,7 @@ const About = () => {
   const changelog = [
     {
       version: '2.0.0',
-      date: '2024',
+      date: '2025',
       features: [
         'File encryption/decryption with drag-and-drop',
         'Password-based key derivation (PBKDF2)',
@@ -79,7 +79,7 @@ const About = () => {
     },
     {
       version: '1.0.0',
-      date: '2024',
+      date: '2025',
       features: [
         'Initial release',
         'AES-128/192/256 encryption',
@@ -94,7 +94,8 @@ const About = () => {
     { name: 'Ahmad Jaroush', role: 'Developer' },
     { name: 'Carl Wakim', role: 'Developer' },
     { name: 'Lea Nasrallah', role: 'Developer' },
-    { name: 'Yasmina El Jamal', role: 'Developer' }
+    { name: 'Yasmina El Jamal', role: 'Developer' },
+    { name: 'Tatiana Kaado', role: 'Developer' }
   ];
 
   return (
@@ -143,7 +144,7 @@ const About = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="flex flex-nowrap justify-center gap-6 overflow-x-auto">
             {teamMembers.map((member, index) => (
               <motion.div
                 key={index}
@@ -151,7 +152,7 @@ const About = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
                 viewport={{ once: true }}
-                className="text-center p-6 glass rounded-xl border-clean hover:border-accent transition-all duration-300"
+                className="text-center p-6 glass rounded-xl border-clean hover:border-accent transition-all duration-300 flex-shrink-0 w-[180px]"
               >
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg mb-4">
                   <User className="h-6 w-6 text-white" />
@@ -430,7 +431,7 @@ const About = () => {
             Developed for educational and professional use
           </p>
           <p className="text-white/60 text-sm">
-            © 2024 AES Encryption Tool v2.0.0
+            © 2025 AES Encryption Tool v2.0.0
           </p>
         </motion.div>
       </div>

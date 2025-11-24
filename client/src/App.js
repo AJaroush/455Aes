@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Encrypt from './pages/Encrypt';
 import Decrypt from './pages/Decrypt';
@@ -11,11 +12,13 @@ import Tutorial from './pages/Tutorial';
 import About from './pages/About';
 import History from './pages/History';
 import AESHistory from './pages/AESHistory';
+import Attacks from './pages/Attacks';
 
 function App() {
   return (
     <ThemeProvider>
       <Router>
+        <ScrollToTop />
         <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
           <Navbar />
           <main>
@@ -25,6 +28,7 @@ function App() {
               <Route path="/decrypt" element={<Decrypt />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/tutorial" element={<Tutorial />} />
+              <Route path="/attacks" element={<Attacks />} />
               <Route path="/about" element={<About />} />
               <Route path="/history" element={<History />} />
               <Route path="/aes-history" element={<AESHistory />} />

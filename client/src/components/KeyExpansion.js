@@ -25,7 +25,7 @@ const KeyExpansion = ({ keys }) => {
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ delay: index * 0.02, duration: 0.3 }}
-      className="matrix-cell w-8 h-8 flex items-center justify-center rounded font-mono font-bold text-xs bg-white/10 text-white border border-white/20 hover:bg-white/20 transition-all duration-300"
+      className="matrix-cell w-8 h-8 flex items-center justify-center rounded font-mono font-bold text-xs bg-white/10 dark:bg-white/10 text-gray-900 dark:text-white border border-gray-300 dark:border-white/20 hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300"
     >
       {value}
     </motion.div>
@@ -34,12 +34,12 @@ const KeyExpansion = ({ keys }) => {
   const KeyMatrix = ({ keyMatrix, round }) => (
     <div className="glass rounded-lg p-4 border border-white/20">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-white font-semibold">Round {round} Key</h4>
+        <h4 className="text-gray-900 dark:text-white font-semibold">Round {round} Key</h4>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => copyKey(keyMatrix, round)}
-          className="p-1 glass rounded text-white hover:bg-white/20 transition-all duration-300"
+          className="p-1 glass rounded text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300"
         >
           <Copy className="h-3 w-3" />
         </motion.button>
@@ -94,9 +94,9 @@ const KeyExpansion = ({ keys }) => {
         transition={{ duration: 0.3 }}
         className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10"
       >
-        <h5 className="text-white font-medium mb-2">{info.title}</h5>
-        <p className="text-sm text-blue-200 mb-2">{info.description}</p>
-        <p className="text-xs text-blue-300 font-mono">{info.process}</p>
+        <h5 className="text-gray-900 dark:text-white font-medium mb-2">{info.title}</h5>
+        <p className="text-sm text-blue-600 dark:text-blue-200 mb-2">{info.description}</p>
+        <p className="text-xs text-blue-700 dark:text-blue-300 font-mono">{info.process}</p>
       </motion.div>
     );
   };
@@ -105,18 +105,18 @@ const KeyExpansion = ({ keys }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h3 className="text-2xl font-bold text-white mb-2 flex items-center justify-center">
-          <Key className="h-6 w-6 mr-3 text-blue-400" />
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-center">
+          <Key className="h-6 w-6 mr-3 text-blue-600 dark:text-blue-400" />
           Key Expansion
         </h3>
-        <p className="text-blue-200">
+        <p className="text-blue-600 dark:text-blue-200">
           How the encryption key is expanded into round keys for each encryption round
         </p>
       </div>
 
       {/* Key Overview */}
       <div className="glass rounded-lg p-6 border border-white/20">
-        <h4 className="text-white font-semibold mb-4">Key Schedule Overview</h4>
+        <h4 className="text-gray-900 dark:text-white font-semibold mb-4">Key Schedule Overview</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {keys.map((key, index) => (
             <motion.button
@@ -127,7 +127,7 @@ const KeyExpansion = ({ keys }) => {
               className={`p-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                 selectedRound === index
                   ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                  : 'glass text-white/80 hover:text-white hover:bg-white/20'
+                  : 'glass text-gray-900 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/20'
               }`}
             >
               Round {key.round}
@@ -156,7 +156,7 @@ const KeyExpansion = ({ keys }) => {
       {/* All Keys Grid */}
       <div className="glass rounded-lg p-6 border border-white/20">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-white font-semibold">All Round Keys</h4>
+          <h4 className="text-gray-900 dark:text-white font-semibold">All Round Keys</h4>
           <div className="text-sm text-blue-300">
             {keys.length} round keys generated
           </div>
@@ -173,12 +173,12 @@ const KeyExpansion = ({ keys }) => {
             >
               <div className="glass rounded-lg p-4 border border-white/20 hover:border-white/40 transition-all duration-300">
                 <div className="flex items-center justify-between mb-3">
-                  <h5 className="text-white font-medium">Round {key.round}</h5>
+                  <h5 className="text-gray-900 dark:text-white font-medium">Round {key.round}</h5>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => toggleRound(index)}
-                    className="p-1 glass rounded text-white hover:bg-white/20 transition-all duration-300"
+                    className="p-1 glass rounded text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300"
                   >
                     {expandedRounds[index] ? 
                       <ChevronUp className="h-3 w-3" /> : 
@@ -199,7 +199,7 @@ const KeyExpansion = ({ keys }) => {
                   )}
                 </div>
 
-                <div className="text-xs text-blue-300 font-mono text-center">
+                <div className="text-xs text-blue-700 dark:text-blue-300 font-mono text-center">
                   {key.key.flat().join(' ')}
                 </div>
 
@@ -224,23 +224,23 @@ const KeyExpansion = ({ keys }) => {
 
       {/* Key Statistics */}
       <div className="glass rounded-lg p-6 border border-white/20">
-        <h4 className="text-white font-semibold mb-4">Key Expansion Statistics</h4>
+        <h4 className="text-gray-900 dark:text-white font-semibold mb-4">Key Expansion Statistics</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-blue-500/20 rounded-lg">
             <div className="text-2xl font-bold text-blue-300">{keys.length}</div>
-            <div className="text-sm text-white">Total Rounds</div>
+            <div className="text-sm text-gray-900 dark:text-white">Total Rounds</div>
           </div>
           <div className="text-center p-4 bg-green-500/20 rounded-lg">
             <div className="text-2xl font-bold text-green-300">{keys.length * 16}</div>
-            <div className="text-sm text-white">Total Bytes</div>
+            <div className="text-sm text-gray-900 dark:text-white">Total Bytes</div>
           </div>
           <div className="text-center p-4 bg-purple-500/20 rounded-lg">
             <div className="text-2xl font-bold text-purple-300">{keys.length * 128}</div>
-            <div className="text-sm text-white">Total Bits</div>
+            <div className="text-sm text-gray-900 dark:text-white">Total Bits</div>
           </div>
           <div className="text-center p-4 bg-orange-500/20 rounded-lg">
             <div className="text-2xl font-bold text-orange-300">4</div>
-            <div className="text-sm text-white">Words per Key</div>
+            <div className="text-sm text-gray-900 dark:text-white">Words per Key</div>
           </div>
         </div>
       </div>

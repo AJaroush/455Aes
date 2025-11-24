@@ -53,9 +53,10 @@ class AES {
 
   hexToBytes(hexString) {
     // Remove spaces and 0x prefixes (but not standalone 0 or x characters)
-    hexString = hexString.replace(/\s+/g, '').replace(/^0x/i, '');
+    hexString = hexString.replace(/\s+/g, '').replace(/^0x/i, '').toUpperCase();
+    // Auto-pad odd-length hex strings with leading zero
     if (hexString.length % 2 !== 0) {
-      throw new Error('Invalid hex string length');
+      hexString = '0' + hexString;
     }
     const bytes = [];
     for (let i = 0; i < hexString.length; i += 2) {
@@ -269,9 +270,13 @@ class AES {
         roundKeyMatrix.push(row);
       }
 
+      // Convert matrix to hex string array format for display
+      const hexMatrix = roundKeyMatrix.map(row => 
+        row.map(val => val.toString(16).padStart(2, '0').toUpperCase())
+      );
       results.expanded_key.push({
         round: i,
-        key: this.matrixToHex(roundKeyMatrix)
+        key: hexMatrix
       });
     }
 
@@ -447,7 +452,8 @@ class AES {
     const results = {
       rounds: [],
       expanded_key: [],
-      final_plaintext: ''
+      final_plaintext: '',
+      initial_state: this.matrixToHex(state) // Store initial ciphertext state
     };
 
     // Store expanded key information
@@ -460,9 +466,13 @@ class AES {
         }
         roundKeyMatrix.push(row);
       }
+      // Convert matrix to hex string array format for display
+      const hexMatrix = roundKeyMatrix.map(row => 
+        row.map(val => val.toString(16).padStart(2, '0').toUpperCase())
+      );
       results.expanded_key.push({
         round: i,
-        key: this.matrixToHex(roundKeyMatrix)
+        key: hexMatrix
       });
     }
 

@@ -1,0 +1,105 @@
+═══════════════════════════════════════════════════════════════════
+                    TEAM CONTRIBUTIONS
+              AES Encryption Tool Project
+═══════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 👤 PERSON 1: Backend Core & API Development                    │
+├─────────────────────────────────────────────────────────────────┤
+│ Development:                                                    │
+│ • Core AES implementation (aes_implementation.js)               │
+│ • Enhanced AES with padding (aes_enhanced.js)                  │
+│ • Advanced encryption modes (aes_advanced.js)                  │
+│ • Express server & all API endpoints                            │
+│ • Key derivation (PBKDF2, Argon2)                              │
+│ • File upload/download handling                                 │
+│                                                                 │
+│ Documentation:                                                  │
+│ • Presentation: Backend Architecture (15-20 slides)            │
+│ • Report: Introduction & System Architecture (6-8 pages)       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 👤 PERSON 2: Encryption & Decryption Pages                    │
+├─────────────────────────────────────────────────────────────────┤
+│ Development:                                                    │
+│ • Encryption page (Encrypt.js) - Full implementation           │
+│ • Decryption page (Decrypt.js) - Full implementation            │
+│ • Input mode toggle (text/file)                                 │
+│ • Step-by-step guides                                           │
+│ • File drag-and-drop functionality                              │
+│ • PDF export for results                                        │
+│ • Key/IV generation & password-based keys                       │
+│                                                                 │
+│ Documentation:                                                  │
+│ • Presentation: Encryption/Decryption Features (15-20 slides)  │
+│ • Report: Core Functionality & UI (6-8 pages)                   │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 👤 PERSON 3: Visualizations & Educational Pages                │
+├─────────────────────────────────────────────────────────────────┤
+│ Development:                                                    │
+│ • Matrix visualization component                                 │
+│ • Round-by-round visualization                                   │
+│ • Key expansion visualization                                   │
+│ • Compare page (AES variant comparison)                         │
+│ • Tutorial page (Interactive learning)                          │
+│ • Animation & UI polish                                          │
+│                                                                 │
+│ Documentation:                                                  │
+│ • Presentation: Visualizations & Educational Features (15-20)   │
+│ • Report: Visualization System (6-8 pages)                       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 👤 PERSON 4: Security & History Pages                         │
+├─────────────────────────────────────────────────────────────────┤
+│ Development:                                                    │
+│ • Attacks page (Comprehensive attack documentation)             │
+│ • History page (Encryption/decryption history)                  │
+│ • AES History page (Historical context)                         │
+│ • About page                                                     │
+│ • PDF export for history                                         │
+│ • Security best practices content                                │
+│                                                                 │
+│ Documentation:                                                  │
+│ • Presentation: Security Analysis & Attack Vectors (15-20)      │
+│ • Report: Security Analysis (6-8 pages)                         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ 👤 PERSON 5: UI/UX & Documentation Lead                        │
+├─────────────────────────────────────────────────────────────────┤
+│ Development:                                                    │
+│ • Home page (Landing page)                                       │
+│ • Navigation bar & theme system                                  │
+│ • Overall UI/UX consistency                                     │
+│ • Dark/light mode implementation                                │
+│ • Responsive design                                              │
+│                                                                 │
+│ Documentation:                                                  │
+│ • Final Report: Complete compilation, editing, formatting        │
+│ • Presentation: Introduction, Conclusion, Demo (10-15 slides)  │
+│ • Report: Abstract, Conclusion, References, Appendices           │
+└─────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+                          SUMMARY
+═══════════════════════════════════════════════════════════════════
+
+Total Development Effort:     ~125-150 hours
+Total Presentation Slides:    ~80-100 slides
+Total Report Pages:           ~30-40 pages
+
+Each team member contributes equally:
+• ~25-30 hours of development work
+• 15-20 presentation slides (Person 5: 10-15 + coordination)
+• 6-8 report pages (Person 5: coordination + final compilation)
+
+Shared Responsibilities:
+• Code review & testing
+• Presentation practice & rehearsals
+• Report review & feedback
+• Bug fixes & quality assurance
+

@@ -19,7 +19,9 @@ import {
   ChevronUp,
   Info,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -100,8 +102,18 @@ const Encrypt = () => {
       return;
     }
 
-    if (message.length !== 32) {
-      toast.error('Message must be exactly 32 hex characters (16 bytes)');
+    if (message.length === 0) {
+      toast.error('Please enter a message to encrypt');
+      return;
+    }
+
+    const hexRegex = /^[0-9A-F]+$/;
+    if (!hexRegex.test(message)) {
+      toast.error('Message contains non-hex characters. Please use only 0-9 and A-F');
+      return;
+    }
+    if (!hexRegex.test(key)) {
+      toast.error('Key contains non-hex characters. Please use only 0-9 and A-F');
       return;
     }
 
@@ -120,6 +132,31 @@ const Encrypt = () => {
       toast.error(error.response?.data?.error || 'Encryption failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateRandomMessage = async () => {
+    try {
+      // Generate 16 random bytes (32 hex characters)
+      const randomBytes = new Uint8Array(16);
+      crypto.getRandomValues(randomBytes);
+      const hexMessage = Array.from(randomBytes)
+        .map(b => b.toString(16).padStart(2, '0').toUpperCase())
+        .join('');
+      setMessage(hexMessage);
+      toast.success('Random message generated!');
+    } catch (error) {
+      toast.error('Failed to generate message: ' + error.message);
+    }
+  };
+
+  const generateRandomKey = async () => {
+    try {
+      const response = await axios.post('/api/generate-key', { key_size: keySize });
+      setKey(response.data.key);
+      toast.success('Secure random key generated!');
+    } catch (error) {
+      toast.error('Failed to generate key: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -210,21 +247,37 @@ const Encrypt = () => {
               {/* Message Input */}
               <div className="mb-6">
                 <label className="block text-white font-medium mb-3">
-                  Message (16 bytes in Hexadecimal)
+                  Message to Encrypt
                 </label>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={generateRandomMessage}
+                  className="w-full mb-3 p-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all flex items-center justify-center"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generate Random Message
+                </motion.button>
                 <div className="relative">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value.toUpperCase())}
-                    placeholder="e.g., 54776F204F6E65204E696E652054776F"
+                    placeholder="Enter your message in hexadecimal format (e.g., 54776F204F6E65204E696E652054776F) or use the button above to generate one"
                     className="w-full p-4 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-mono"
-                    rows={3}
-                    maxLength={32}
+                    rows={4}
                   />
                   <div className="absolute top-2 right-2 text-xs text-white/50">
-                    {message.length}/32
+                    {message.length} characters
                   </div>
+                  {message.length > 0 && (
+                    <div className="absolute bottom-2 right-2">
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    </div>
+                  )}
                 </div>
+                <p className="mt-2 text-xs text-white/50">
+                  💡 Tip: Enter any hexadecimal characters (0-9, A-F). The message will be padded automatically if needed.
+                </p>
               </div>
 
               {/* Key Input */}
@@ -232,6 +285,15 @@ const Encrypt = () => {
                 <label className="block text-white font-medium mb-3">
                   Key (Hexadecimal)
                 </label>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={generateRandomKey}
+                  className="w-full mb-3 p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center justify-center"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Generate Random Key
+                </motion.button>
                 <div className="relative">
                   <textarea
                     value={key}
@@ -464,14 +526,164 @@ const Encrypt = () => {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="glass rounded-2xl p-12 border border-white/20 text-center">
-                <Shield className="h-16 w-16 text-white/30 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white/70 mb-2">
-                  No Results Yet
+              <div className="glass rounded-2xl p-6 border border-white/20">
+                <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+                  <Zap className="h-6 w-6 mr-3 text-cyan-400" />
+                  Step-by-Step Guide
+                </h2>
+                
+                <div className="space-y-4">
+                  {/* Step 1 */}
+                  <div className={`p-4 rounded-lg border-2 transition-all ${
+                    message.length > 0
+                      ? 'bg-green-500/10 border-green-500/50'
+                      : 'bg-white/5 border-white/20'
+                  }`}>
+                    <div className="flex items-start space-x-4">
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                        message.length > 0
+                          ? 'bg-green-500 text-white'
+                          : 'bg-white/20 text-white'
+                      }`}>
+                        {message.length > 0 ? <CheckCircle className="h-5 w-5" /> : '1'}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white mb-1">
+                          Enter Your Message
+                        </h3>
+                        <p className="text-sm text-white/70 mb-2">
+                          Enter your message in hexadecimal format (0-9, A-F). The message should be 32 hexadecimal characters (16 bytes). You can click "Generate Random Message" to create one automatically.
+                        </p>
+                        {message.length > 0 ? (
+                          <div className="flex items-center text-sm">
+                            {message.length === 32 ? (
+                              <div className="flex items-center text-green-400">
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Message is ready! ({message.length} characters)
+                              </div>
+                            ) : (
+                              <div className="flex items-center text-yellow-400">
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                {message.length} characters (recommended: 32)
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-white/50 text-sm">
+                            💡 Tip: Use the "Generate Random Message" button above for a quick start (generates 32 characters)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className={`p-4 rounded-lg border-2 transition-all ${
+                    key.length === parseInt(keySize)/4
+                      ? 'bg-green-500/10 border-green-500/50'
+                      : 'bg-white/5 border-white/20'
+                  }`}>
+                    <div className="flex items-start space-x-4">
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                        key.length === parseInt(keySize)/4
+                          ? 'bg-green-500 text-white'
+                          : 'bg-white/20 text-white'
+                      }`}>
+                        {cleanedKey.length === parseInt(keySize)/4 ? <CheckCircle className="h-5 w-5" /> : '2'}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white mb-1">
+                          Enter Your Key
+                        </h3>
+                        <p className="text-sm text-white/70 mb-2">
+                          Enter exactly {parseInt(keySize)/4} hexadecimal characters for AES-{keySize}, or use the refresh button to generate a random key.
+                        </p>
+                        {cleanedKey.length === parseInt(keySize)/4 ? (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Key is ready!
+                          </div>
+                        ) : cleanedKey.length > 0 ? (
+                          <div className="flex items-center text-yellow-400 text-sm">
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            {parseInt(keySize)/4 - key.length} more characters needed
+                          </div>
+                        ) : (
+                          <div className="text-white/50 text-sm">
+                            Use "Quick Examples" below or generate a random key
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className={`p-4 rounded-lg border-2 transition-all ${
+                    message.length > 0 && key.length === parseInt(keySize)/4
+                      ? 'bg-cyan-500/10 border-cyan-500/50'
+                      : 'bg-white/5 border-white/20'
+                  }`}>
+                    <div className="flex items-start space-x-4">
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                        message.length > 0 && key.length === parseInt(keySize)/4
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-white/20 text-white'
+                      }`}>
+                        3
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white mb-1">
+                          Click Encrypt
+                        </h3>
+                        <p className="text-sm text-white/70 mb-2">
+                          Once both message and key are entered, click the "Encrypt Message" button to start the encryption process. You can also press Ctrl+Enter.
+                        </p>
+                        {message.length > 0 && key.length === parseInt(keySize)/4 ? (
+                          <div className="flex items-center text-cyan-400 text-sm">
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Ready to encrypt! Click the button above or press Ctrl+Enter.
+                          </div>
+                        ) : (
+                          <div className="text-white/50 text-sm">
+                            Complete steps 1 and 2 first
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="p-4 rounded-lg border-2 bg-blue-500/10 border-blue-500/30">
+                    <div className="flex items-start space-x-4">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold bg-blue-500 text-white">
+                        4
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white mb-1">
+                          View Results
                 </h3>
-                <p className="text-white/50">
-                  Enter your message and key, then click "Encrypt Message" to see the results
-                </p>
+                        <p className="text-sm text-white/70">
+                          After encryption, you'll see detailed results including the ciphertext, encryption rounds visualization, key expansion, and matrix transformations.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Tips */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg border border-cyan-500/20">
+                  <h3 className="font-semibold text-white mb-2 flex items-center">
+                    <Info className="h-4 w-4 mr-2 text-cyan-400" />
+                    Quick Tips
+                  </h3>
+                  <ul className="space-y-1 text-sm text-white/70">
+                    <li>• Use "Generate Random Message" and "Generate Random Key" buttons for quick setup</li>
+                    <li>• Press Ctrl+Enter to encrypt when ready</li>
+                    <li>• You can enter messages of any length - they'll be padded automatically</li>
+                    <li>• Switch between Hexadecimal and Password key modes as needed</li>
+                    <li>• File encryption is also available - just drag and drop a file</li>
+                  </ul>
+                </div>
               </div>
             )}
           </motion.div>

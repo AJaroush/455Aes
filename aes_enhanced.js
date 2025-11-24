@@ -55,9 +55,10 @@ class AESEnhanced {
 
   // Utility functions
   hexToBytes(hexString) {
-    hexString = hexString.replace(/[\s0x]/g, '');
+    hexString = hexString.replace(/[\s0x]/g, '').toUpperCase();
+    // Auto-pad odd-length hex strings with leading zero
     if (hexString.length % 2 !== 0) {
-      throw new Error('Invalid hex string length');
+      hexString = '0' + hexString;
     }
     const bytes = [];
     for (let i = 0; i < hexString.length; i += 2) {

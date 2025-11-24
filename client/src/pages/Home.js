@@ -426,7 +426,7 @@ const Home = () => {
           </div>
           <div className="text-center pt-8 border-t border-gray-200 dark:border-white/10">
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              © 2024 AES Encryption Tool v2.0.0 • Built for learning cryptography
+              © 2025 AES Encryption Tool v2.0.0 • Built for learning cryptography
             </p>
           </div>
         </div>

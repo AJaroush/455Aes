@@ -15,6 +15,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import jsPDF from 'jspdf';
 
 const History = () => {
   const [history, setHistory] = useState([]);
@@ -75,6 +76,125 @@ const History = () => {
     a.click();
     URL.revokeObjectURL(url);
     toast.success('History exported!');
+  };
+
+  const exportToPDF = () => {
+    if (history.length === 0) {
+      toast.error('No history to export');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPos = margin;
+      const lineHeight = 7;
+      const maxWidth = pageWidth - (margin * 2);
+
+      // Helper function to add text with word wrap
+      const addText = (text, fontSize = 10, isBold = false, color = [0, 0, 0]) => {
+        doc.setFontSize(fontSize);
+        doc.setTextColor(color[0], color[1], color[2]);
+        if (isBold) {
+          doc.setFont(undefined, 'bold');
+        } else {
+          doc.setFont(undefined, 'normal');
+        }
+        const lines = doc.splitTextToSize(text, maxWidth);
+        lines.forEach((line) => {
+          if (yPos > doc.internal.pageSize.getHeight() - margin) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.text(line, margin, yPos);
+          yPos += lineHeight;
+        });
+        yPos += 3; // Add spacing after text block
+      };
+
+      // Title
+      addText('AES Encryption/Decryption History', 18, true, [0, 102, 204]);
+      yPos += 5;
+
+      // Summary Stats
+      addText('Summary', 14, true, [0, 0, 0]);
+      addText(`Total Operations: ${stats.total}`, 10);
+      addText(`Encryptions: ${stats.encrypt}`, 10);
+      addText(`Decryptions: ${stats.decrypt}`, 10);
+      addText(`Files: ${stats.files}`, 10);
+      addText(`Export Date: ${new Date().toLocaleString()}`, 10, false, [128, 128, 128]);
+      yPos += 5;
+
+      // History Items
+      addText('History Details', 14, true, [0, 0, 0]);
+      yPos += 5;
+
+      filteredHistory.forEach((item, index) => {
+        // Check if we need a new page
+        if (yPos > doc.internal.pageSize.getHeight() - 60) {
+          doc.addPage();
+          yPos = margin;
+        }
+
+        // Item header
+        const itemType = item.type === 'encrypt' ? 'Encryption' : 'Decryption';
+        addText(`${index + 1}. ${itemType} Operation`, 12, true, item.type === 'encrypt' ? [0, 102, 204] : [147, 51, 234]);
+        
+        // Timestamp
+        addText(`Date: ${new Date(item.timestamp).toLocaleString()}`, 10, false, [128, 128, 128]);
+        
+        // Details
+        if (item.filename) {
+          addText(`File: ${item.filename}`, 10);
+        }
+        addText(`Key Size: AES-${item.keySize}`, 10);
+        if (item.mode) {
+          addText(`Mode: ${item.mode}`, 10);
+        }
+        if (item.speed) {
+          addText(`Speed: ${item.speed}`, 10);
+        }
+        if (item.message) {
+          const messageText = item.message.length > 50 
+            ? item.message.substring(0, 50) + '...' 
+            : item.message;
+          addText(`Message: ${messageText}`, 10);
+        }
+        if (item.ciphertext) {
+          const ciphertextText = item.ciphertext.length > 50 
+            ? item.ciphertext.substring(0, 50) + '...' 
+            : item.ciphertext;
+          addText(`Ciphertext: ${ciphertextText}`, 10);
+        }
+        if (item.hashBefore) {
+          const hashText = item.hashBefore.length > 50 
+            ? item.hashBefore.substring(0, 50) + '...' 
+            : item.hashBefore;
+          addText(`Hash: ${hashText}`, 10);
+        }
+        
+        // Separator line
+        yPos += 2;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 5;
+      });
+
+      // Footer
+      yPos = doc.internal.pageSize.getHeight() - 20;
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      doc.text(`AES Encryption Tool v2.0.0 - ${filteredHistory.length} items shown`, margin, yPos);
+      doc.text('Keep this document secure!', pageWidth - margin - 50, yPos, { align: 'right' });
+
+      // Save PDF
+      doc.save(`aes-history-${Date.now()}.pdf`);
+      toast.success('History exported as PDF!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Failed to export PDF: ' + error.message);
+    }
   };
 
   const filteredHistory = history.filter(item => {
@@ -185,9 +305,21 @@ const History = () => {
                 onClick={exportHistory}
                 disabled={history.length === 0}
                 className="px-4 py-2 bg-green-500/20 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                title="Export as JSON"
               >
                 <Download className="h-4 w-4" />
-                <span>Export</span>
+                <span>Export JSON</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={exportToPDF}
+                disabled={history.length === 0}
+                className="px-4 py-2 bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                title="Export as PDF"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Export PDF</span>
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
