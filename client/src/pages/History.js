@@ -105,8 +105,8 @@ const History = () => {
       const encryptHistoryData = localStorage.getItem('encryptionHistory');
       const decryptHistoryData = localStorage.getItem('decryptionHistory');
       
-      let encryptHistory = [];
-      let decryptHistory = [];
+      let encryptHistoryList = [];
+      let decryptHistoryList = [];
       
       if (isEncrypted && providedPassword) {
         // Decrypt history
@@ -120,11 +120,11 @@ const History = () => {
               if (encryptHistoryData.startsWith('[')) {
                 // Plain JSON - but we expect encrypted, this might be old data
                 console.warn('Encryption history is in plain format, but encryption is enabled');
-                encryptHistory = JSON.parse(encryptHistoryData);
+                encryptHistoryList = JSON.parse(encryptHistoryData);
               } else {
                 // Encrypted (base64)
                 try {
-                  encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+                  encryptHistoryList = await decryptHistory(encryptHistoryData, providedPassword);
                 } catch (decryptErr) {
                   console.error('Decryption failed for encryption history:', decryptErr);
                   console.error('Data length:', encryptHistoryData.length);
@@ -136,7 +136,7 @@ const History = () => {
               console.error('Failed to process encryption history:', error);
               console.error('Error details:', error.message, error.stack);
               decryptError = true;
-              encryptHistory = []; // Set to empty array if decryption fails
+              encryptHistoryList = []; // Set to empty array if decryption fails
             }
           }
           
@@ -145,11 +145,11 @@ const History = () => {
               if (decryptHistoryData.startsWith('[')) {
                 // Plain JSON - but we expect encrypted, this might be old data
                 console.warn('Decryption history is in plain format, but encryption is enabled');
-                decryptHistory = JSON.parse(decryptHistoryData);
+                decryptHistoryList = JSON.parse(decryptHistoryData);
               } else {
                 // Encrypted (base64)
                 try {
-                  decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+                  decryptHistoryList = await decryptHistory(decryptHistoryData, providedPassword);
                 } catch (decryptErr) {
                   console.error('Decryption failed for decryption history:', decryptErr);
                   console.error('Data length:', decryptHistoryData.length);
@@ -161,13 +161,13 @@ const History = () => {
               console.error('Failed to process decryption history:', error);
               console.error('Error details:', error.message, error.stack);
               decryptError = true;
-              decryptHistory = []; // Set to empty array if decryption fails
+              decryptHistoryList = []; // Set to empty array if decryption fails
             }
           }
           
           // Check if we have any history loaded
-          const hasHistory = (Array.isArray(encryptHistory) && encryptHistory.length > 0) || 
-                            (Array.isArray(decryptHistory) && decryptHistory.length > 0);
+          const hasHistory = (Array.isArray(encryptHistoryList) && encryptHistoryList.length > 0) || 
+                            (Array.isArray(decryptHistoryList) && decryptHistoryList.length > 0);
           
           // If both failed and no history was loaded, show error with helpful message
           if (decryptError && !hasHistory) {
@@ -208,8 +208,8 @@ const History = () => {
         }
       } else if (!isEncrypted) {
         // Plain history (not encrypted) - should not happen if password is required
-        encryptHistory = JSON.parse(encryptHistoryData || '[]');
-        decryptHistory = JSON.parse(decryptHistoryData || '[]');
+        encryptHistoryList = JSON.parse(encryptHistoryData || '[]');
+        decryptHistoryList = JSON.parse(decryptHistoryData || '[]');
       } else {
         // Encrypted but no password provided - can't load
         return;
@@ -217,8 +217,8 @@ const History = () => {
       
       // Combine and sort history (even if some decryption failed, show what we have)
       const combined = [
-        ...(Array.isArray(encryptHistory) ? encryptHistory : []).map(item => ({ ...item, type: 'encrypt' })),
-        ...(Array.isArray(decryptHistory) ? decryptHistory : []).map(item => ({ ...item, type: 'decrypt' }))
+        ...(Array.isArray(encryptHistoryList) ? encryptHistoryList : []).map(item => ({ ...item, type: 'encrypt' })),
+        ...(Array.isArray(decryptHistoryList) ? decryptHistoryList : []).map(item => ({ ...item, type: 'decrypt' }))
       ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       
       setHistory(combined);
