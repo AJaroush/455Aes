@@ -274,12 +274,18 @@ const Encrypt = () => {
           .toUpperCase();
         
         // Use text encryption API
+        // Generate IV if not provided
+        if (!finalIV) {
+          const ivResponse = await axios.post('/api/generate-key', { key_size: keySize });
+          finalIV = ivResponse.data.iv;
+        }
+        
         response = await axios.post('/api/encrypt-advanced', {
           message: messageHex,
           key: finalKey,
           key_size: keySize,
           mode: 'CBC',
-          iv: finalIV || aes.generateRandomIV()
+          iv: finalIV
         });
         
         ciphertextHex = response.data.ciphertext;
