@@ -385,9 +385,6 @@ const History = () => {
       loadHistory();
       toast.success('Item deleted!');
     }
-    
-    await loadHistory(sessionPassword || null);
-    toast.success('Item deleted!');
   };
 
   const copyToClipboard = (text, label) => {
