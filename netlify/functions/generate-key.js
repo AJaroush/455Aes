@@ -25,7 +25,18 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { key_size = '128' } = JSON.parse(event.body);
+    // Handle empty body
+    let body = {};
+    if (event.body) {
+      try {
+        body = JSON.parse(event.body);
+      } catch (e) {
+        // If JSON parsing fails, use default
+        body = {};
+      }
+    }
+    
+    const { key_size = '128' } = body;
     const aes = new AESEnhanced(parseInt(key_size));
     const key = aes.generateRandomKey();
     const iv = aes.generateRandomIV();
@@ -44,13 +55,17 @@ exports.handler = async (event, context) => {
     };
   } catch (error) {
     console.error('Key generation error:', error);
+    console.error('Error stack:', error.stack);
     return {
       statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ 
+        error: error.message,
+        details: process.env.NETLIFY_DEV ? error.stack : undefined
+      })
     };
   }
 };

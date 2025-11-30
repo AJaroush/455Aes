@@ -153,7 +153,14 @@ const Encrypt = () => {
 
   const generateRandomKey = async () => {
     try {
-      const response = await axios.post('/api/generate-key', { key_size: keySize });
+      const response = await axios.post('/api/generate-key', 
+        { key_size: keySize },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       setKey(response.data.key);
       if (response.data.iv) {
         // Store IV if needed for future file encryption
@@ -161,7 +168,9 @@ const Encrypt = () => {
       }
       toast.success('Secure random key generated!');
     } catch (error) {
-      toast.error('Failed to generate key: ' + (error.response?.data?.error || error.message));
+      console.error('Generate key error:', error);
+      console.error('Error response:', error.response);
+      toast.error('Failed to generate key: ' + (error.response?.data?.error || error.message || 'Unknown error'));
     }
   };
 
@@ -282,7 +291,14 @@ const Encrypt = () => {
         
         // Generate IV if not provided
         if (!finalIV) {
-          const ivResponse = await axios.post('/api/generate-key', { key_size: keySize });
+          const ivResponse = await axios.post('/api/generate-key', 
+            { key_size: keySize },
+            {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
           finalIV = ivResponse.data.iv;
         }
         
