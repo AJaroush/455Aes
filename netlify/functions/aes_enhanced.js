@@ -463,8 +463,15 @@ class AESEnhanced {
     let previousBlock = ivBytes;
     
     for (let i = 0; i < ciphertextBytes.length; i += 16) {
-      const block = ciphertextBytes.slice(i, i + 16);
-      const decrypted = this.decryptBlock(Array.from(block), keyHex);
+      let block = Array.from(ciphertextBytes.slice(i, i + 16));
+      // Ensure block is exactly 16 bytes
+      if (block.length < 16) {
+        // Pad incomplete block (shouldn't happen, but handle it)
+        while (block.length < 16) {
+          block.push(0);
+        }
+      }
+      const decrypted = this.decryptBlock(block, keyHex);
       const xored = this.xorBytes(decrypted, previousBlock);
       plaintext.push(...xored);
       previousBlock = block;
