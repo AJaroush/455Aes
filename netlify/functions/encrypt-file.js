@@ -99,6 +99,13 @@ exports.handler = async (event, context) => {
       const encrypted = [];
       for (let i = 0; i < padded.length; i += 16) {
         const block = padded.slice(i, i + 16);
+        // Ensure block is exactly 16 bytes (should always be with proper padding)
+        if (block.length < 16) {
+          // Pad to 16 bytes if somehow incomplete
+          while (block.length < 16) {
+            block.push(0);
+          }
+        }
         const encryptedBlock = aes.encryptBlock(block, cleanKey);
         encrypted.push(...encryptedBlock);
       }

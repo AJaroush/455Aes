@@ -76,11 +76,19 @@ class AESEnhanced {
   }
 
   bytesToMatrix(data) {
+    // Ensure data is exactly 16 bytes
+    if (data.length !== 16) {
+      const padded = new Array(16).fill(0);
+      for (let i = 0; i < Math.min(data.length, 16); i++) {
+        padded[i] = data[i] || 0;
+      }
+      data = padded;
+    }
     const matrix = [];
     for (let i = 0; i < 4; i++) {
       const row = [];
       for (let j = 0; j < 4; j++) {
-        row.push(data[4 * j + i]);
+        row.push(data[4 * j + i] || 0);
       }
       matrix.push(row);
     }
