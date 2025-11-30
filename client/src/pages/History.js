@@ -157,7 +157,7 @@ const History = () => {
           
           // If at least one succeeded, continue
           if (decryptError) {
-            toast.warning('Some history items could not be decrypted. Wrong password?');
+            toast.error('Some history items could not be decrypted. Wrong password?');
           } else {
             toast.success('History loaded successfully!');
           }
