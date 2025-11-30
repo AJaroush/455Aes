@@ -165,19 +165,25 @@ const History = () => {
             }
           }
           
-          // If both failed, show error
-          if (decryptError && encryptHistory.length === 0 && decryptHistory.length === 0) {
-            toast.error('Failed to decrypt history. Wrong password?');
+          // Check if we have any history loaded
+          const hasHistory = (Array.isArray(encryptHistory) && encryptHistory.length > 0) || 
+                            (Array.isArray(decryptHistory) && decryptHistory.length > 0);
+          
+          // If both failed and no history was loaded, show error
+          if (decryptError && !hasHistory) {
+            toast.error('Failed to decrypt history. Please check:\n1. Password is correct\n2. History was encrypted with this password');
             setPassword('');
             setIsLoading(false);
             return;
           }
           
-          // If at least one succeeded, continue
-          if (decryptError) {
-            toast.error('Some history items could not be decrypted. Wrong password?');
-          } else {
+          // If we have history but some failed, show warning
+          if (decryptError && hasHistory) {
+            toast.error('Some history items could not be decrypted. This may be due to:\n1. Wrong password\n2. Corrupted data\n3. History encrypted with different password');
+          } else if (hasHistory) {
             toast.success('History loaded successfully!');
+          } else {
+            toast.success('History is empty. Start encrypting/decrypting to see history here.');
           }
           
           // Store password in sessionStorage temporarily for Encrypt/Decrypt pages to use
