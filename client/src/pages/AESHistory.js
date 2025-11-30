@@ -1,3 +1,21 @@
+/**
+ * AES History Page Component
+ * 
+ * Educational timeline of the Advanced Encryption Standard (AES)
+ * 
+ * Content:
+ * - Historical timeline from DES to AES selection
+ * - AES competition and selection process
+ * - Adoption and standardization
+ * - Modern usage and importance
+ * - Key milestones and achievements
+ * 
+ * Features:
+ * - Visual timeline with animated entries
+ * - Historical context and background
+ * - Educational information about AES development
+ */
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';

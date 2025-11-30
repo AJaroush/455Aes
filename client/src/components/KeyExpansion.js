@@ -1,11 +1,27 @@
+/**
+ * Key Expansion Visualization Component
+ * 
+ * Displays the AES key expansion process showing all round keys
+ * Each round key is displayed as a 4x4 matrix in column-major order
+ * 
+ * Features:
+ * - Expandable/collapsible round keys
+ * - Copy key to clipboard functionality
+ * - Animated matrix cells
+ * - Visual representation of key schedule
+ * 
+ * @param {array} keys - Array of expanded round keys (4x4 matrices)
+ */
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Key, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const KeyExpansion = ({ keys }) => {
-  const [expandedRounds, setExpandedRounds] = useState({});
-  const [selectedRound, setSelectedRound] = useState(0);
+  // UI state
+  const [expandedRounds, setExpandedRounds] = useState({}); // Track which rounds are expanded
+  const [selectedRound, setSelectedRound] = useState(0); // Currently selected round
 
   const toggleRound = (roundIndex) => {
     setExpandedRounds(prev => ({

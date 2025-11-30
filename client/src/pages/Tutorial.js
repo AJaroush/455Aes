@@ -1,3 +1,26 @@
+/**
+ * Tutorial Page Component
+ * 
+ * Interactive educational tutorial about AES encryption
+ * 
+ * Content Sections:
+ * - What is AES? (Introduction)
+ * - AES Operations (SubBytes, ShiftRows, MixColumns, AddRoundKey)
+ * - Key Expansion (How round keys are generated)
+ * - Encryption Process (Step-by-step walkthrough)
+ * - Decryption Process (Inverse operations)
+ * - Modes of Operation (ECB, CBC, etc.)
+ * - Security Considerations
+ * - Use Cases and Applications
+ * 
+ * Features:
+ * - Step-by-step navigation
+ * - Expandable sections with detailed explanations
+ * - Code examples with copy functionality
+ * - Visual aids and diagrams
+ * - Links to try encryption/decryption
+ */
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -23,9 +46,10 @@ import {
 import { toast } from 'react-hot-toast';
 
 const Tutorial = () => {
-  const [activeStep, setActiveStep] = useState(0);
-  const [expandedSections, setExpandedSections] = useState({});
-  const [copiedCode, setCopiedCode] = useState({});
+  // Tutorial navigation and UI state
+  const [activeStep, setActiveStep] = useState(0); // Current tutorial step
+  const [expandedSections, setExpandedSections] = useState({}); // Track expanded sections
+  const [copiedCode, setCopiedCode] = useState({}); // Track copied code snippets
 
   const toggleSection = (sectionId) => {
     setExpandedSections(prev => ({

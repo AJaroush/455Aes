@@ -1,3 +1,21 @@
+/**
+ * Home Page Component
+ * 
+ * Landing page for the AES Encryption Tool application
+ * 
+ * Features:
+ * - Hero section with application introduction
+ * - Feature cards linking to main functionality (Encrypt, Decrypt, Tutorial)
+ * - Key features overview
+ * - Statistics and highlights
+ * - Call-to-action buttons
+ * 
+ * Purpose:
+ * - First impression and navigation hub
+ * - Educational introduction to AES
+ * - Quick access to main features
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';

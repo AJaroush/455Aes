@@ -1,3 +1,21 @@
+/**
+ * Express Server for AES Encryption Tool
+ * 
+ * This server provides REST API endpoints for:
+ * - Text encryption/decryption with visualization support
+ * - File encryption/decryption (text and binary files)
+ * - Advanced encryption modes (CTR, CFB, OFB, XTS, GCM)
+ * - Key generation (random keys and PBKDF2 key derivation)
+ * - HMAC calculation for integrity verification
+ * 
+ * Key Features:
+ * - Supports AES-128, AES-192, AES-256
+ * - Multiple encryption modes: ECB, CBC, CTR, CFB, OFB, XTS, GCM
+ * - File upload handling with multer
+ * - CORS enabled for cross-origin requests
+ * - Serves React frontend build files
+ */
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -5,28 +23,53 @@ const multer = require('multer');
 const crypto = require('crypto');
 const fs = require('fs');
 
-// Import our AES implementations
-const { AES } = require('./aes_implementation');
-const { AESEnhanced } = require('./aes_enhanced');
-const { AESAdvanced } = require('./aes_advanced');
+// Import AES implementations
+const { AES } = require('./aes_implementation'); // Original AES with visualization support
+const { AESEnhanced } = require('./aes_enhanced'); // Enhanced AES with CBC mode and padding
+const { AESAdvanced } = require('./aes_advanced'); // Advanced AES with multiple modes
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080; // Use environment port or default to 8080
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'client/build')));
+// ========== Middleware Configuration ==========
 
-// Configure multer for file uploads
+app.use(cors()); // Enable CORS for all routes (allows frontend to call API)
+app.use(express.json()); // Parse JSON request bodies
+app.use(express.static(path.join(__dirname, 'client/build'))); // Serve React frontend build files
+
+// ========== File Upload Configuration ==========
+
+/**
+ * Configure multer for handling file uploads
+ * Uses memory storage (files stored in RAM, not disk)
+ * 100MB file size limit
+ */
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.memoryStorage(), // Store files in memory as Buffer objects
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB limit for desktop app
   },
 });
 
-// API Routes
+// ========== API Routes ==========
+
+/**
+ * Text Encryption Endpoint
+ * 
+ * Encrypts plaintext message using AES with full visualization support
+ * Supports ECB mode with step-by-step round visualization
+ * 
+ * Request body:
+ * - message: hex string (plaintext)
+ * - key: hex string (must match key_size)
+ * - key_size: '128', '192', or '256'
+ * 
+ * Response:
+ * - final_ciphertext: encrypted hex string
+ * - rounds: array of round data for visualization
+ * - expanded_key: key expansion data
+ * - initial_state: initial state matrix
+ */
 app.post('/api/encrypt', async (req, res) => {
   try {
     const { message, key, key_size } = req.body;
@@ -49,6 +92,7 @@ app.post('/api/encrypt', async (req, res) => {
     }
 
     // Auto-pad odd-length hex strings with leading zero
+    // Ensures valid hex byte pairs (each byte = 2 hex characters)
     if (cleanMessage.length % 2 !== 0) {
       cleanMessage = '0' + cleanMessage;
     }
@@ -56,12 +100,13 @@ app.post('/api/encrypt', async (req, res) => {
     if (cleanMessage.length === 0) {
       return res.status(400).json({ error: 'Message cannot be empty' });
     }
-    // Auto-pad odd-length hex strings with leading zero
+    
+    // Auto-pad odd-length key with leading zero
     if (cleanKey.length % 2 !== 0) {
       cleanKey = '0' + cleanKey;
     }
 
-    // Ensure only valid hex characters
+    // Validate hex format - only allow hexadecimal characters (0-9, A-F)
     const hexRegex = /^[0-9A-F]+$/;
     if (!hexRegex.test(cleanMessage)) {
       return res.status(400).json({ error: 'Message contains non-hex characters' });
@@ -70,20 +115,23 @@ app.post('/api/encrypt', async (req, res) => {
       return res.status(400).json({ error: 'Key contains non-hex characters' });
     }
 
-    // Create AES instance and encrypt
+    // Create AES instance with specified key size and encrypt
+    // Uses original AES class which provides full visualization data
     const aes = new AES(parseInt(key_size));
     let results;
     try {
+      // Encrypt message - returns full result with visualization data
       results = aes.encrypt(cleanMessage, cleanKey);
     } catch (e) {
-      // Convert low-level hex errors to 400s
+      // Convert low-level hex errors to user-friendly 400 responses
       const msg = String(e.message || e);
       if (msg.includes('Invalid hex string length') || msg.includes('Invalid hex character')) {
         return res.status(400).json({ error: msg });
       }
-      throw e;
+      throw e; // Re-throw unexpected errors
     }
     
+    // Return encryption results with visualization data
     res.json(results);
   } catch (error) {
     console.error('Encryption error:', error);
@@ -95,17 +143,26 @@ app.post('/api/encrypt', async (req, res) => {
   }
 });
 
-// File upload endpoint
+/**
+ * File Upload Endpoint
+ * 
+ * Converts uploaded file to hex format for encryption
+ * Used for file-to-hex conversion before encryption
+ * 
+ * Request: multipart/form-data with 'file' field
+ * Response: hex representation of file (padded to 16 bytes)
+ */
 app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Convert file to hex
+    // Convert file buffer to hexadecimal string
     const hex = req.file.buffer.toString('hex').toUpperCase();
     
-    // Pad to 16 bytes (32 hex chars) for AES
+    // Pad to 16 bytes (32 hex chars) for AES block size
+    // This ensures the hex string is a valid AES block
     const padded = hex.padEnd(32, '0').substring(0, 32);
     
     res.json({
@@ -120,7 +177,19 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
 });
 
-// Batch encryption endpoint
+/**
+ * Batch Encryption Endpoint
+ * 
+ * Encrypts multiple messages with the same key
+ * Useful for performance testing or bulk operations
+ * 
+ * Request body:
+ * - messages: array of hex strings
+ * - key: hex string
+ * - key_size: '128', '192', or '256'
+ * 
+ * Response: array of encryption results (success/error per message)
+ */
 app.post('/api/batch-encrypt', async (req, res) => {
   try {
     const { messages, key, key_size } = req.body;
@@ -156,7 +225,20 @@ app.post('/api/batch-encrypt', async (req, res) => {
   }
 });
 
-// Performance test endpoint
+/**
+ * Performance Test Endpoint
+ * 
+ * Measures encryption performance by running multiple iterations
+ * Returns statistical data (min, max, avg, median execution times)
+ * 
+ * Request body:
+ * - message: hex string to encrypt
+ * - key: hex string
+ * - key_size: '128', '192', or '256'
+ * - iterations: number of test iterations (default: 100)
+ * 
+ * Response: performance statistics in milliseconds
+ */
 app.post('/api/performance-test', async (req, res) => {
   try {
     const { message, key, key_size, iterations = 100 } = req.body;
@@ -164,22 +246,23 @@ app.post('/api/performance-test', async (req, res) => {
     const aes = new AES(parseInt(key_size));
     const times = [];
     
-    // Warm up
+    // Warm up JIT compiler and cache
     aes.encrypt(message, key);
     
-    // Performance test
+    // Performance test - run encryption multiple times and measure
     for (let i = 0; i < iterations; i++) {
-      const start = process.hrtime.bigint();
+      const start = process.hrtime.bigint(); // High-resolution timer
       aes.encrypt(message, key);
       const end = process.hrtime.bigint();
-      times.push(Number(end - start) / 1000000); // Convert to milliseconds
+      times.push(Number(end - start) / 1000000); // Convert nanoseconds to milliseconds
     }
     
+    // Calculate performance statistics
     const stats = {
-      min: Math.min(...times),
-      max: Math.max(...times),
-      avg: times.reduce((a, b) => a + b, 0) / times.length,
-      median: times.sort((a, b) => a - b)[Math.floor(times.length / 2)],
+      min: Math.min(...times), // Fastest encryption
+      max: Math.max(...times), // Slowest encryption
+      avg: times.reduce((a, b) => a + b, 0) / times.length, // Average time
+      median: times.sort((a, b) => a - b)[Math.floor(times.length / 2)], // Median time
       iterations
     };
     
@@ -190,15 +273,35 @@ app.post('/api/performance-test', async (req, res) => {
   }
 });
 
-// File encryption endpoint
+/**
+ * File Encryption Endpoint
+ * 
+ * Encrypts files of any type (text, binary, images, etc.)
+ * Supports both multer file uploads and JSON with base64 fileData
+ * 
+ * Request: multipart/form-data with 'file' OR JSON with 'fileData' (base64)
+ * Body parameters:
+ * - key: hex string
+ * - key_size: '128', '192', or '256'
+ * - mode: 'CBC' or 'ECB' (default: 'CBC')
+ * - iv: hex string (required for CBC, auto-generated if not provided)
+ * 
+ * Response:
+ * - encryptedData: base64 encoded encrypted file
+ * - hashBefore: SHA-256 hash of original file
+ * - hashAfter: SHA-256 hash of encrypted file
+ * - iv: IV used for encryption
+ * - mode: encryption mode used
+ */
 app.post('/api/encrypt-file', upload.single('file'), async (req, res) => {
   try {
     // Support both file upload (multer) and JSON with base64 fileData
+    // This allows compatibility with both traditional uploads and serverless functions
     let fileBuffer;
     let filename;
     
     if (req.file) {
-      // Traditional file upload via multer
+      // Traditional file upload via multer (binary file)
       fileBuffer = req.file.buffer;
       filename = req.file.originalname;
     } else if (req.body.fileData) {
@@ -224,33 +327,41 @@ app.post('/api/encrypt-file', upload.single('file'), async (req, res) => {
       });
     }
 
+    // Create AES instance with enhanced features (CBC mode, padding support)
     const aes = new AESEnhanced(parseInt(key_size));
     
-    // Calculate SHA-256 hash before encryption
+    // Calculate SHA-256 hash of original file for integrity verification
+    // This allows users to verify file integrity after decryption
     const hashBefore = crypto.createHash('sha256').update(fileBuffer).digest('hex').toUpperCase();
     
     let encryptedBuffer;
     let usedIV = iv;
     
+    // Encrypt based on selected mode
     if (mode === 'CBC') {
+      // CBC mode: requires IV, generates random IV if not provided
       if (!iv) {
-        usedIV = aes.generateRandomIV();
+        usedIV = aes.generateRandomIV(); // Generate cryptographically secure random IV
       } else {
+        // Validate and clean provided IV
         usedIV = (iv || '').replace(/\s+/g, '').toUpperCase();
         if (usedIV.length !== 32) {
           return res.status(400).json({ error: 'IV must be exactly 32 hex characters (16 bytes)' });
         }
       }
+      // Encrypt using CBC mode (chaining blocks with IV)
       encryptedBuffer = aes.encryptCBC(Array.from(fileBuffer), cleanKey, usedIV);
     } else {
-      // ECB mode (not recommended but supported)
-      const padded = aes.pkcs7Pad(Array.from(fileBuffer));
+      // ECB mode (not recommended for security but supported)
+      // ECB encrypts each block independently (no chaining)
+      const padded = aes.pkcs7Pad(Array.from(fileBuffer)); // Add PKCS7 padding
       const encrypted = [];
+      // Encrypt each 16-byte block
       for (let i = 0; i < padded.length; i += 16) {
         const block = padded.slice(i, i + 16);
         // Ensure block is exactly 16 bytes (should always be with proper padding)
         if (block.length < 16) {
-          // Pad to 16 bytes if somehow incomplete
+          // Safety check: pad to 16 bytes if somehow incomplete
           while (block.length < 16) {
             block.push(0);
           }
@@ -261,7 +372,7 @@ app.post('/api/encrypt-file', upload.single('file'), async (req, res) => {
       encryptedBuffer = Buffer.from(encrypted);
     }
     
-    // Calculate SHA-256 hash after encryption
+    // Calculate SHA-256 hash of encrypted file for integrity verification
     const hashAfter = crypto.createHash('sha256').update(encryptedBuffer).digest('hex').toUpperCase();
     
     res.json({
@@ -282,29 +393,48 @@ app.post('/api/encrypt-file', upload.single('file'), async (req, res) => {
   }
 });
 
-// Text decryption endpoint
+/**
+ * Text Decryption Endpoint
+ * 
+ * Decrypts ciphertext with full visualization support for ECB/CBC modes
+ * Supports both single-block and multi-block ciphertext
+ * 
+ * Request body:
+ * - ciphertext: hex string
+ * - key: hex string (must match key_size)
+ * - key_size: '128', '192', or '256'
+ * - mode: 'ECB' or 'CBC' (default: 'ECB')
+ * - iv: hex string (required for CBC mode)
+ * 
+ * Response:
+ * - final_plaintext: decrypted hex string
+ * - rounds: array of round data for visualization (ECB/CBC only)
+ * - expanded_key: key expansion data (ECB/CBC only)
+ * - initial_state: initial state matrix (ECB/CBC only)
+ */
 app.post('/api/decrypt', async (req, res) => {
   try {
     const { ciphertext, key, key_size, iv, mode = 'ECB' } = req.body;
     
-    // Normalize inputs (strip whitespace/newlines) and uppercase
+    // Normalize inputs: remove whitespace/newlines and convert to uppercase
     const cleanCiphertext = (ciphertext || '').replace(/\s+/g, '').toUpperCase();
     const cleanKey = (key || '').replace(/\s+/g, '').toUpperCase();
     const cleanIV = iv ? (iv || '').replace(/\s+/g, '').toUpperCase() : null;
     
-    // Validate inputs
+    // Validate required inputs
     if (!cleanCiphertext || !cleanKey || !key_size) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const expectedKeyLength = parseInt(key_size) / 4;
+    // Validate key length matches selected key size
+    const expectedKeyLength = parseInt(key_size) / 4; // Key size in bits / 4 = hex characters
     if (cleanKey.length !== expectedKeyLength) {
       return res.status(400).json({ 
         error: `Key must be exactly ${expectedKeyLength} hex characters for AES-${key_size}`
       });
     }
 
-    // Validate IV for CBC mode
+    // Validate IV for CBC mode (required for proper decryption)
     if (mode === 'CBC' && !cleanIV) {
       return res.status(400).json({ error: 'IV is required for CBC mode decryption' });
     }
@@ -312,7 +442,8 @@ app.post('/api/decrypt', async (req, res) => {
       return res.status(400).json({ error: 'IV must be exactly 32 hex characters (16 bytes)' });
     }
 
-    // Auto-pad odd-length hex strings with a leading zero for both ciphertext and key
+    // Auto-pad odd-length hex strings with leading zero
+    // Ensures valid hex byte pairs (each byte = 2 hex characters)
     let processedCiphertext = cleanCiphertext.length % 2 !== 0 ? '0' + cleanCiphertext : cleanCiphertext;
     let processedKey = cleanKey.length % 2 !== 0 ? '0' + cleanKey : cleanKey;
     
@@ -320,11 +451,13 @@ app.post('/api/decrypt', async (req, res) => {
       return res.status(400).json({ error: 'Ciphertext cannot be empty' });
     }
     
-    // Track original length before padding
+    // Track original length before auto-padding
+    // Used later to trim decrypted data back to original size
     const originalLength = processedCiphertext.length;
     const originalByteLength = Math.ceil(originalLength / 2);
     
-    // Auto-pad ciphertext to nearest multiple of 32 hex characters (16 bytes) for block cipher
+    // Auto-pad ciphertext to nearest multiple of 32 hex characters (16 bytes)
+    // Block ciphers require data in 16-byte blocks
     // This allows decryption of any length ciphertext
     const remainder = processedCiphertext.length % 32;
     let wasAutoPadded = false;
@@ -332,7 +465,7 @@ app.post('/api/decrypt', async (req, res) => {
       // Pad with zeros to reach the next 16-byte boundary
       const paddingNeeded = 32 - remainder;
       processedCiphertext = processedCiphertext + '0'.repeat(paddingNeeded);
-      wasAutoPadded = true;
+      wasAutoPadded = true; // Flag to handle padding removal later
     }
 
     // Ensure only valid hex characters
@@ -356,57 +489,69 @@ app.post('/api/decrypt', async (req, res) => {
         // CBC mode decryption with visualization
         const ciphertextBytes = aes.hexToBytes(processedCiphertext);
         
+        // CBC Mode Decryption Strategy:
+        // 1. Decrypt first block with original AES class to get visualization data
+        // 2. Decrypt full ciphertext with AESEnhanced using CBC mode
+        // 3. Extract visualization from first block, use CBC result for plaintext
+        
         // Decrypt first block using original AES for visualization (before CBC XOR)
+        // This provides full round-by-round visualization data
         const firstBlockHex = aes.bytesToHex(ciphertextBytes.slice(0, 16));
-        const basicAes = new AES(parseInt(key_size));
+        const basicAes = new AES(parseInt(key_size)); // Original AES class with visualization
         const firstBlockResult = basicAes.decrypt(firstBlockHex, processedKey);
         
-        // Get visualization data from first block
+        // Extract visualization data from first block decryption
         const visualizationRounds = firstBlockResult.rounds || [];
         const visualizationExpandedKey = firstBlockResult.expanded_key || [];
         const visualizationInitialState = firstBlockResult.initial_state || null;
         
-        // Now decrypt using CBC mode
+        // Now decrypt full ciphertext using CBC mode (proper chaining with IV)
         const decryptedBytes = aes.decryptCBC(ciphertextBytes, processedKey, cleanIV);
         
-        // Try to remove PKCS7 padding
+        // Try to remove PKCS7 padding (standard padding scheme)
         let unpadded;
         try {
           unpadded = aes.pkcs7Unpad(decryptedBytes);
         } catch (paddingError) {
+          // Handle invalid padding gracefully (may occur with auto-padded ciphertext)
           if (wasAutoPadded) {
+            // Only use complete blocks from original ciphertext
             const completeBlocks = Math.floor(originalByteLength / 16) * 16;
             if (completeBlocks > 0) {
               const trimmedBlocks = decryptedBytes.slice(0, completeBlocks);
               try {
                 unpadded = aes.pkcs7Unpad(trimmedBlocks);
               } catch (e) {
-                unpadded = trimmedBlocks;
+                unpadded = trimmedBlocks; // Return without padding if validation fails
               }
             } else {
+              // Original was less than one block, return trimmed data
               unpadded = decryptedBytes.slice(0, Math.min(originalByteLength, decryptedBytes.length));
             }
           } else {
-            unpadded = decryptedBytes;
+            unpadded = decryptedBytes; // Return as-is if padding validation fails
           }
         }
         
+        // Combine visualization data with decrypted plaintext
         results = {
           final_plaintext: aes.bytesToHex(unpadded),
           plaintext: aes.bytesToHex(unpadded),
           mode: 'CBC',
-          rounds: visualizationRounds,
-          initial_state: visualizationInitialState,
-          expanded_key: visualizationExpandedKey
+          rounds: visualizationRounds, // Visualization from first block
+          initial_state: visualizationInitialState, // Visualization from first block
+          expanded_key: visualizationExpandedKey // Visualization from first block
         };
       } else {
-        // ECB mode (default)
-        // If ciphertext is exactly 16 bytes (32 hex chars), use original AES for visualization
+        // ECB Mode Decryption (default)
+        // ECB mode: each block is decrypted independently (no chaining)
+        
+        // If ciphertext is exactly 16 bytes (32 hex chars), use original AES for full visualization
         if (processedCiphertext.length === 32) {
           const basicAes = new AES(parseInt(key_size)); // Original AES for visualization
           results = basicAes.decrypt(processedCiphertext, processedKey);
         } else {
-          // For other lengths, decrypt first block with full visualization, then process remaining blocks
+          // Multi-block ciphertext: decrypt first block with visualization, then process remaining blocks
           const ciphertextBytes = aes.hexToBytes(processedCiphertext);
           const decryptedBlocks = [];
           
@@ -415,17 +560,17 @@ app.post('/api/decrypt', async (req, res) => {
           const basicAes = new AES(parseInt(key_size));
           const firstBlockResult = basicAes.decrypt(firstBlockHex, processedKey);
           
-          // Get visualization data from first block
+          // Extract visualization data from first block
           const visualizationRounds = firstBlockResult.rounds || [];
           const visualizationExpandedKey = firstBlockResult.expanded_key || [];
           const visualizationInitialState = firstBlockResult.initial_state || null;
           
-          // Add first block decrypted bytes (use final_plaintext or plaintext)
+          // Add first block decrypted bytes to result
           const firstBlockPlaintextHex = firstBlockResult.final_plaintext || firstBlockResult.plaintext || '';
           const firstBlockPlaintextBytes = aes.hexToBytes(firstBlockPlaintextHex);
           decryptedBlocks.push(...firstBlockPlaintextBytes);
           
-          // Decrypt remaining blocks using AESEnhanced
+          // Decrypt remaining blocks using AESEnhanced (more efficient for large data)
           for (let i = 16; i < ciphertextBytes.length; i += 16) {
             const block = ciphertextBytes.slice(i, i + 16);
             if (block.length === 16) {
@@ -439,10 +584,9 @@ app.post('/api/decrypt', async (req, res) => {
           try {
             unpadded = aes.pkcs7Unpad(decryptedBlocks);
           } catch (paddingError) {
-            // If padding is invalid (e.g., due to auto-padding), handle gracefully
+            // Handle invalid padding (may occur with auto-padded ciphertext)
             if (wasAutoPadded) {
-              // If we auto-padded, only return bytes from complete blocks in original ciphertext
-              // This avoids including garbage bytes from the auto-padded portion
+              // Only use complete blocks from original ciphertext to avoid garbage bytes
               const completeBlocks = Math.floor(originalByteLength / 16) * 16;
               if (completeBlocks > 0) {
                 const trimmedBlocks = decryptedBlocks.slice(0, completeBlocks);
@@ -461,25 +605,28 @@ app.post('/api/decrypt', async (req, res) => {
               unpadded = decryptedBlocks;
             }
           }
+          
+          // Combine visualization data with decrypted plaintext
           results = {
             final_plaintext: aes.bytesToHex(unpadded),
             plaintext: aes.bytesToHex(unpadded),
             mode: 'ECB',
-            rounds: visualizationRounds, // Use visualization from first block
-            initial_state: visualizationInitialState, // Use visualization from first block
-            expanded_key: visualizationExpandedKey // Use visualization from first block
+            rounds: visualizationRounds, // Visualization from first block
+            initial_state: visualizationInitialState, // Visualization from first block
+            expanded_key: visualizationExpandedKey // Visualization from first block
           };
         }
       }
     } catch (e) {
-      // Convert low-level hex errors to 400s
+      // Convert low-level hex errors to user-friendly 400 responses
       const msg = String(e.message || e);
       if (msg.includes('Invalid hex string length') || msg.includes('Invalid hex character')) {
         return res.status(400).json({ error: msg });
       }
-      throw e;
+      throw e; // Re-throw unexpected errors
     }
     
+    // Return decryption results with visualization data
     res.json(results);
   } catch (error) {
     console.error('Decryption error:', error);
@@ -491,7 +638,25 @@ app.post('/api/decrypt', async (req, res) => {
   }
 });
 
-// File decryption endpoint
+/**
+ * File Decryption Endpoint
+ * 
+ * Decrypts encrypted files of any type
+ * Supports both multer file uploads and JSON with base64 fileData
+ * 
+ * Request: multipart/form-data with 'file' OR JSON with 'fileData' (base64)
+ * Body parameters:
+ * - key: hex string
+ * - key_size: '128', '192', or '256'
+ * - mode: 'CBC' or 'ECB' (default: 'CBC')
+ * - iv: hex string (required for CBC mode)
+ * 
+ * Response:
+ * - decryptedData: base64 encoded decrypted file
+ * - hashBefore: SHA-256 hash of encrypted file
+ * - hashAfter: SHA-256 hash of decrypted file
+ * - mode: decryption mode used
+ */
 app.post('/api/decrypt-file', upload.single('file'), async (req, res) => {
   try {
     // Support both file upload (multer) and JSON with base64 fileData
@@ -595,8 +760,21 @@ app.post('/api/decrypt-file', upload.single('file'), async (req, res) => {
   }
 });
 
-// Generate random key endpoint
+/**
+ * Generate Random Key Endpoint
+ * 
+ * Generates cryptographically secure random keys and IVs
+ * 
+ * Request body:
+ * - key_size: '128', '192', or '256' (default: '128')
+ * 
+ * Response:
+ * - key: random hex key
+ * - iv: random hex IV
+ * - keySize: key size used
+ */
 app.options('/api/generate-key', (req, res) => {
+  // CORS preflight handler
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -607,8 +785,8 @@ app.post('/api/generate-key', (req, res) => {
   try {
     const { key_size = '128' } = req.body || {};
     const aes = new AESEnhanced(parseInt(key_size));
-    const key = aes.generateRandomKey();
-    const iv = aes.generateRandomIV();
+    const key = aes.generateRandomKey(); // Generate cryptographically secure random key
+    const iv = aes.generateRandomIV(); // Generate cryptographically secure random IV
     
     res.json({
       key,
@@ -621,7 +799,23 @@ app.post('/api/generate-key', (req, res) => {
   }
 });
 
-// Password-based key derivation (PBKDF2)
+/**
+ * Password-Based Key Derivation Endpoint (PBKDF2)
+ * 
+ * Derives encryption keys from passwords using PBKDF2
+ * Industry-standard key derivation function for password-based encryption
+ * 
+ * Request body:
+ * - password: plaintext password
+ * - key_size: '128', '192', or '256' (default: '128')
+ * - salt: hex string (optional, auto-generated if not provided)
+ * 
+ * Response:
+ * - key: derived hex key
+ * - salt: salt used (hex string)
+ * - keySize: key size used
+ * - iterations: number of PBKDF2 iterations (100,000)
+ */
 app.post('/api/derive-key', (req, res) => {
   try {
     const { password, key_size = '128', salt } = req.body;
@@ -630,17 +824,18 @@ app.post('/api/derive-key', (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    const keyBytes = parseInt(key_size) / 8;
-    const saltBuffer = salt ? Buffer.from(salt, 'hex') : crypto.randomBytes(16);
+    const keyBytes = parseInt(key_size) / 8; // Convert bits to bytes
+    const saltBuffer = salt ? Buffer.from(salt, 'hex') : crypto.randomBytes(16); // Use provided salt or generate random
     
-    // Use PBKDF2 with 100,000 iterations (industry standard)
+    // Use PBKDF2 with 100,000 iterations (industry standard for security)
+    // PBKDF2 makes brute-force attacks computationally expensive
     const derivedKey = crypto.pbkdf2Sync(password, saltBuffer, 100000, keyBytes, 'sha256');
     const derivedKeyHex = derivedKey.toString('hex').toUpperCase();
     const saltHex = saltBuffer.toString('hex').toUpperCase();
     
     res.json({
       key: derivedKeyHex,
-      salt: saltHex,
+      salt: saltHex, // Return salt so client can store it for later key derivation
       keySize: key_size,
       iterations: 100000
     });
@@ -650,7 +845,26 @@ app.post('/api/derive-key', (req, res) => {
   }
 });
 
-// Advanced encryption modes endpoint
+/**
+ * Advanced Encryption Modes Endpoint
+ * 
+ * Encrypts data using advanced AES modes (CTR, CFB, OFB, XTS, GCM)
+ * These modes don't support step-by-step visualization
+ * 
+ * Request body:
+ * - message: hex string (plaintext)
+ * - key: hex string
+ * - key_size: '128', '192', or '256'
+ * - mode: 'CTR', 'CFB', 'OFB', 'XTS', or 'GCM'
+ * - iv: hex string (required for CFB, OFB, XTS, GCM)
+ * - nonce: hex string (required for CTR)
+ * - additionalData: hex string (optional, for GCM authenticated encryption)
+ * 
+ * Response:
+ * - ciphertext: encrypted hex string
+ * - tag: authentication tag (GCM mode only)
+ * - mode: encryption mode used
+ */
 app.post('/api/encrypt-advanced', async (req, res) => {
   try {
     const { message, key, key_size, mode, iv, nonce, additionalData } = req.body;

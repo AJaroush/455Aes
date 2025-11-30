@@ -1,3 +1,23 @@
+/**
+ * Encrypt Page Component
+ * 
+ * This component provides the AES encryption interface with the following features:
+ * - Text and file encryption support
+ * - Multiple encryption modes (ECB, CBC, CTR, CFB, OFB, XTS, GCM)
+ * - Hex key input or password-based key derivation (PBKDF2)
+ * - Step-by-step visualization (rounds, key expansion, matrix view) for ECB/CBC modes
+ * - History tracking with optional password protection
+ * - Drag-and-drop file upload
+ * - Export results as PDF
+ * - HMAC calculation for integrity verification
+ * 
+ * Key Functionality:
+ * - Validates hex input and key sizes
+ * - Handles different encryption modes with appropriate IV/nonce requirements
+ * - Displays encryption results with visualization components
+ * - Saves encryption history to localStorage (encrypted if password is set)
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -33,60 +53,95 @@ import KeyExpansion from '../components/KeyExpansion';
 import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted, decryptHistory } from '../utils/historyEncryption';
 
 const Encrypt = () => {
-  const [message, setMessage] = useState('');
-  const [key, setKey] = useState('');
-  const [keySize, setKeySize] = useState('128');
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('rounds');
-  const [currentRound, setCurrentRound] = useState(0);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [usePassword, setUsePassword] = useState(false);
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showMessage, setShowMessage] = useState(true);
-  const [showKey, setShowKey] = useState(true);
-  const [encryptionHistory, setEncryptionHistory] = useState([]);
-  const [keyMode, setKeyMode] = useState('hex'); // 'hex' or 'password'
-  const [encryptionMode, setEncryptionMode] = useState('CBC'); // 'CBC', 'ECB', 'CTR', 'CFB', 'OFB', 'XTS', 'GCM'
-  const [iv, setIv] = useState('');
-  const [nonce, setNonce] = useState('');
-  const [useHMAC] = useState(false);
-  const [hmacValue, setHmacValue] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState(null);
-  const [showAdvancedModes, setShowAdvancedModes] = useState(false);
-  const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
-  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  // ========== State Management ==========
+  
+  // Input fields
+  const [message, setMessage] = useState(''); // Plaintext message to encrypt (hex)
+  const [key, setKey] = useState(''); // Encryption key (hex or password)
+  const [keySize, setKeySize] = useState('128'); // AES key size: 128, 192, or 256 bits
+  const [iv, setIv] = useState(''); // Initialization Vector for CBC/CFB/OFB/GCM/XTS modes
+  const [nonce, setNonce] = useState(''); // Nonce for CTR mode
+  
+  // Results and UI state
+  const [results, setResults] = useState(null); // Encryption results from API
+  const [loading, setLoading] = useState(false); // Loading state for async operations
+  const [activeTab, setActiveTab] = useState('rounds'); // Active visualization tab: 'rounds', 'keys', 'matrix'
+  const [currentRound, setCurrentRound] = useState(0); // Current round being viewed in visualization
+  
+  // File handling
+  const [selectedFile, setSelectedFile] = useState(null); // Selected file for encryption
+  const [isDragging, setIsDragging] = useState(false); // Drag-and-drop state
+  const [inputMode, setInputMode] = useState('text'); // Input mode: 'text' or 'file'
+  
+  // Key derivation
+  const [usePassword, setUsePassword] = useState(false); // Toggle for password-based key derivation
+  const [password, setPassword] = useState(''); // Password for PBKDF2 key derivation
+  const [keyMode, setKeyMode] = useState('hex'); // Key input mode: 'hex' or 'password'
+  const [passwordStrength, setPasswordStrength] = useState(null); // Password strength indicator
+  
+  // UI visibility toggles
+  const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
+  const [showMessage, setShowMessage] = useState(true); // Toggle message visibility
+  const [showKey, setShowKey] = useState(true); // Toggle key visibility
+  const [showAdvancedModes, setShowAdvancedModes] = useState(false); // Toggle advanced modes section
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false); // Show password setup prompt
+  
+  // Encryption mode and history
+  const [encryptionMode, setEncryptionMode] = useState('CBC'); // Encryption mode: 'CBC', 'ECB', 'CTR', 'CFB', 'OFB', 'XTS', 'GCM'
+  const [encryptionHistory, setEncryptionHistory] = useState([]); // Local encryption history for sidebar
+  
+  // HMAC (currently disabled but infrastructure exists)
+  const [useHMAC] = useState(false); // HMAC toggle (disabled)
+  const [hmacValue, setHmacValue] = useState(''); // Calculated HMAC value
 
-  // Check if password is set and show prompt on first visit
+  // ========== Effects ==========
+  
+  /**
+   * Check if history password is set and show prompt on first visit
+   * Prompts user to set a password for history encryption if not already set
+   */
   useEffect(() => {
-    const hasPassword = isHistoryEncrypted();
-    const hasSeenPrompt = localStorage.getItem('encryptPasswordPromptSeen') === 'true';
+    const hasPassword = isHistoryEncrypted(); // Check if password protection is enabled
+    const hasSeenPrompt = localStorage.getItem('encryptPasswordPromptSeen') === 'true'; // Check if user has seen prompt
     
+    // Show prompt if no password is set and user hasn't seen it before
     if (!hasPassword && !hasSeenPrompt) {
       setShowPasswordPrompt(true);
     }
   }, []);
 
-  // Load history from localStorage on mount
+  /**
+   * Load encryption history from localStorage on component mount
+   * Displays last 10 entries in the sidebar
+   */
   useEffect(() => {
-    const stored = loadHistorySafely('encryptionHistory');
-    setEncryptionHistory(stored.slice(0, 10)); // Show last 10 in sidebar
+    const stored = loadHistorySafely('encryptionHistory'); // Safely load history (handles encrypted/plain)
+    setEncryptionHistory(stored.slice(0, 10)); // Show last 10 entries in sidebar
   }, []);
 
-  // Sanitize any hex input: strip whitespace and non-hex, uppercase
-  // Don't pad here - allow odd-length input during typing, pad only when encrypting
-  const cleanHex = (value) => (value || '')
-    .replace(/\s+/g, '')
-    .replace(/[^0-9a-fA-F]/g, '')
-    .toUpperCase();
+  // ========== Utility Functions ==========
   
-  // Computed values for display
-  const cleanedMessage = cleanHex(message);
-  const cleanedKey = cleanHex(key);
+  /**
+   * Sanitize hex input: remove whitespace, filter non-hex characters, convert to uppercase
+   * Allows odd-length input during typing (padding happens during encryption)
+   * @param {string} value - Raw hex input
+   * @returns {string} - Cleaned hex string
+   */
+  const cleanHex = (value) => (value || '')
+    .replace(/\s+/g, '') // Remove all whitespace
+    .replace(/[^0-9a-fA-F]/g, '') // Remove non-hex characters
+    .toUpperCase(); // Convert to uppercase
+  
+  // Computed cleaned values for display and processing
+  const cleanedMessage = cleanHex(message); // Cleaned message input
+  const cleanedKey = cleanHex(key); // Cleaned key input
 
-  // Example inputs
+  // ========== Example Data ==========
+  
+  /**
+   * Pre-defined example inputs for different AES key sizes
+   * Includes NIST test vectors and classic examples for educational purposes
+   */
   const examples = {
     '128': {
       message: '54776F204F6E65204E696E652054776F',

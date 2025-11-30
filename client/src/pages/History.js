@@ -1,3 +1,24 @@
+/**
+ * History Page Component
+ * 
+ * Manages the encryption/decryption history with password protection:
+ * - Displays all encryption and decryption operations
+ * - Password-protected history using AES-GCM encryption
+ * - Strong password requirements (min 12 chars, uppercase, lowercase, number, special char)
+ * - Password setup on first visit
+ * - Password entry required on each visit
+ * - Change/remove password functionality
+ * - Forgot password option (resets history)
+ * - Filter and search functionality
+ * - Export history as JSON or PDF
+ * 
+ * Security Features:
+ * - History encrypted with AES-GCM using PBKDF2 key derivation
+ * - Password stored in sessionStorage (cleared on page navigation)
+ * - Sensitive data (full ciphertext/plaintext) removed from history entries
+ * - Encryption flags persist to indicate password protection status
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -21,21 +42,37 @@ import jsPDF from 'jspdf';
 import { decryptHistory, setHistoryPassword, saveHistory } from '../utils/historyEncryption';
 
 const History = () => {
-  const [history, setHistory] = useState([]);
-  const [filter, setFilter] = useState('all'); // 'all', 'encrypt', 'decrypt'
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showPasswordSetupModal, setShowPasswordSetupModal] = useState(false);
-  const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isEncrypted, setIsEncrypted] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(null);
+  // ========== State Management ==========
+  
+  // History data
+  const [history, setHistory] = useState([]); // Combined encryption/decryption history
+  const [filter, setFilter] = useState('all'); // Filter type: 'all', 'encrypt', 'decrypt'
+  const [searchTerm, setSearchTerm] = useState(''); // Search query for filtering history
+  
+  // Password modals
+  const [showPasswordModal, setShowPasswordModal] = useState(false); // Show password entry modal
+  const [showPasswordSetupModal, setShowPasswordSetupModal] = useState(false); // Show password setup modal
+  
+  // Password fields
+  const [password, setPassword] = useState(''); // Current password for entry
+  const [newPassword, setNewPassword] = useState(''); // New password for setup/change
+  const [confirmPassword, setConfirmPassword] = useState(''); // Password confirmation
+  const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
+  const [showNewPassword, setShowNewPassword] = useState(false); // Toggle new password visibility
+  
+  // UI state
+  const [isLoading, setIsLoading] = useState(false); // Loading state for async operations
+  const [isEncrypted, setIsEncrypted] = useState(false); // Whether history is password-protected
+  const [passwordStrength, setPasswordStrength] = useState(null); // Password strength indicator
 
-  // Password validation function
+  // ========== Password Validation ==========
+  
+  /**
+   * Validate password strength
+   * Checks for: minimum 12 characters, uppercase, lowercase, number, special character
+   * @param {string} pwd - Password to validate
+   * @returns {object} - Strength object with score and requirements
+   */
   const validatePassword = (pwd) => {
     const requirements = {
       length: pwd.length >= 12,

@@ -1,11 +1,31 @@
+/**
+ * Round Visualization Component
+ * 
+ * Displays step-by-step visualization of AES encryption/decryption rounds
+ * Shows each operation (SubBytes, ShiftRows, MixColumns, AddRoundKey) with state changes
+ * 
+ * Features:
+ * - Animated progression through rounds
+ * - Play/pause/step controls
+ * - Detailed operation descriptions
+ * - Expandable round details
+ * - Visual state representation
+ * 
+ * @param {array} rounds - Array of round data with operations and states
+ * @param {boolean} autoPlay - Whether to auto-play animation on mount
+ * @param {number} currentRound - Currently displayed round index
+ * @param {function} setCurrentRound - Function to change current round
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 
 const RoundVisualization = ({ rounds, autoPlay, currentRound, setCurrentRound }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1000);
-  const [showDetails, setShowDetails] = useState({});
+  // Animation and UI state
+  const [isPlaying, setIsPlaying] = useState(false); // Auto-play animation state
+  const [speed, setSpeed] = useState(1000); // Animation speed in milliseconds
+  const [showDetails, setShowDetails] = useState({}); // Track which rounds have details expanded
 
   const allRounds = [
     { round: 0, operation: 'Initial AddRoundKey', state: rounds[0]?.state || [], description: 'XOR the plaintext with the first round key' },

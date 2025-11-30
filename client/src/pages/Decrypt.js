@@ -1,3 +1,22 @@
+/**
+ * Decrypt Page Component
+ * 
+ * This component provides the AES decryption interface with the following features:
+ * - Text and file decryption support
+ * - Multiple encryption modes (ECB, CBC, CTR, CFB, OFB, XTS, GCM)
+ * - Hex key input or password-based key derivation (PBKDF2)
+ * - Step-by-step visualization (rounds, key expansion, matrix view) for ECB/CBC modes
+ * - History tracking with optional password protection
+ * - Drag-and-drop file upload
+ * - Export results as PDF
+ * 
+ * Key Functionality:
+ * - Validates hex input and key sizes
+ * - Handles different encryption modes with appropriate IV/nonce requirements
+ * - Displays decryption results with visualization components
+ * - Saves decryption history to localStorage (encrypted if password is set)
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -33,56 +52,91 @@ import KeyExpansion from '../components/KeyExpansion';
 import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted, decryptHistory } from '../utils/historyEncryption';
 
 const Decrypt = () => {
-  const [ciphertext, setCiphertext] = useState('');
-  const [key, setKey] = useState('');
-  const [iv, setIv] = useState('');
-  const [keySize, setKeySize] = useState('128');
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('rounds');
-  const [currentRound, setCurrentRound] = useState(0);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [usePassword, setUsePassword] = useState(false);
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showKey, setShowKey] = useState(false);
-  const [showIV, setShowIV] = useState(false);
-  const [decryptionHistory, setDecryptionHistory] = useState([]);
-  const [keyMode, setKeyMode] = useState('hex'); // 'hex' or 'password'
-  const [mode, setMode] = useState('CBC'); // 'CBC', 'ECB', 'CTR', 'CFB', 'OFB', 'XTS', 'GCM'
-  const [nonce, setNonce] = useState('');
-  const [showAdvancedModes, setShowAdvancedModes] = useState(false);
-  const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
-  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  // ========== State Management ==========
+  
+  // Input fields
+  const [ciphertext, setCiphertext] = useState(''); // Ciphertext to decrypt (hex)
+  const [key, setKey] = useState(''); // Encryption key (hex or password)
+  const [iv, setIv] = useState(''); // Initialization Vector for CBC/CFB/OFB/GCM/XTS modes
+  const [keySize, setKeySize] = useState('128'); // AES key size: 128, 192, or 256 bits
+  const [nonce, setNonce] = useState(''); // Nonce for CTR mode
+  
+  // Results and UI state
+  const [results, setResults] = useState(null); // Decryption results from API
+  const [loading, setLoading] = useState(false); // Loading state for async operations
+  const [activeTab, setActiveTab] = useState('rounds'); // Active visualization tab: 'rounds', 'keys', 'matrix'
+  const [currentRound, setCurrentRound] = useState(0); // Current round being viewed in visualization
+  
+  // File handling
+  const [selectedFile, setSelectedFile] = useState(null); // Selected file for decryption
+  const [isDragging, setIsDragging] = useState(false); // Drag-and-drop state
+  const [inputMode, setInputMode] = useState('text'); // Input mode: 'text' or 'file'
+  
+  // Key derivation
+  const [usePassword, setUsePassword] = useState(false); // Toggle for password-based key derivation
+  const [password, setPassword] = useState(''); // Password for PBKDF2 key derivation
+  const [keyMode, setKeyMode] = useState('hex'); // Key input mode: 'hex' or 'password'
+  
+  // UI visibility toggles
+  const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
+  const [showKey, setShowKey] = useState(false); // Toggle key visibility
+  const [showIV, setShowIV] = useState(false); // Toggle IV visibility
+  const [showAdvancedModes, setShowAdvancedModes] = useState(false); // Toggle advanced modes section
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false); // Show password setup prompt
+  
+  // Encryption mode and history
+  const [mode, setMode] = useState('CBC'); // Encryption mode: 'CBC', 'ECB', 'CTR', 'CFB', 'OFB', 'XTS', 'GCM'
+  const [decryptionHistory, setDecryptionHistory] = useState([]); // Local decryption history for sidebar
 
-  // Check if password is set and show prompt on first visit
+  // ========== Effects ==========
+  
+  /**
+   * Check if history password is set and show prompt on first visit
+   * Prompts user to set a password for history encryption if not already set
+   */
   useEffect(() => {
-    const hasPassword = isHistoryEncrypted();
-    const hasSeenPrompt = localStorage.getItem('decryptPasswordPromptSeen') === 'true';
+    const hasPassword = isHistoryEncrypted(); // Check if password protection is enabled
+    const hasSeenPrompt = localStorage.getItem('decryptPasswordPromptSeen') === 'true'; // Check if user has seen prompt
     
+    // Show prompt if no password is set and user hasn't seen it before
     if (!hasPassword && !hasSeenPrompt) {
       setShowPasswordPrompt(true);
     }
   }, []);
 
-  // Load history from localStorage on mount
+  /**
+   * Load decryption history from localStorage on component mount
+   * Displays last 10 entries in the sidebar
+   */
   useEffect(() => {
-    const stored = loadHistorySafely('decryptionHistory');
-    setDecryptionHistory(stored.slice(0, 10)); // Show last 10 in sidebar
+    const stored = loadHistorySafely('decryptionHistory'); // Safely load history (handles encrypted/plain)
+    setDecryptionHistory(stored.slice(0, 10)); // Show last 10 entries in sidebar
   }, []);
 
-  // Sanitize any hex input: strip whitespace and non-hex, uppercase
-  const cleanHex = (value) => (value || '')
-    .replace(/\s+/g, '')
-    .replace(/[^0-9a-fA-F]/g, '')
-    .toUpperCase();
+  // ========== Utility Functions ==========
   
-  // Computed values for display
-  const cleanedCiphertext = cleanHex(ciphertext);
-  const cleanedKey = cleanHex(key);
-  const cleanedIV = cleanHex(iv);
+  /**
+   * Sanitize hex input: remove whitespace, filter non-hex characters, convert to uppercase
+   * This ensures consistent hex format for processing
+   * @param {string} value - Raw hex input
+   * @returns {string} - Cleaned hex string
+   */
+  const cleanHex = (value) => (value || '')
+    .replace(/\s+/g, '') // Remove all whitespace
+    .replace(/[^0-9a-fA-F]/g, '') // Remove non-hex characters
+    .toUpperCase(); // Convert to uppercase
+  
+  // Computed cleaned values for display and processing
+  const cleanedCiphertext = cleanHex(ciphertext); // Cleaned ciphertext input
+  const cleanedKey = cleanHex(key); // Cleaned key input
+  const cleanedIV = cleanHex(iv); // Cleaned IV input
 
+  // ========== File Handling Functions ==========
+  
+  /**
+   * Handle file selection from file input
+   * @param {Event} event - File input change event
+   */
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -91,39 +145,62 @@ const Decrypt = () => {
     }
   };
 
+  /**
+   * Handle drag over event for drag-and-drop file upload
+   * Prevents default behavior and sets dragging state
+   * @param {Event} e - Drag event
+   */
   const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
+    e.preventDefault(); // Prevent default browser behavior
+    setIsDragging(true); // Show drag-over visual feedback
   };
 
+  /**
+   * Handle drag leave event
+   * Resets dragging state when file is dragged away
+   * @param {Event} e - Drag event
+   */
   const handleDragLeave = (e) => {
     e.preventDefault();
-    setIsDragging(false);
+    setIsDragging(false); // Remove drag-over visual feedback
   };
 
+  /**
+   * Handle file drop event
+   * Processes dropped file and sets it as selected file
+   * @param {Event} e - Drop event
+   */
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files[0];
+    const file = e.dataTransfer.files[0]; // Get first dropped file
     if (file) {
       setSelectedFile(file);
       toast.success(`File dropped: ${file.name}`);
     }
   };
 
+  // ========== Key/IV/Nonce Generation Functions ==========
+  
+  /**
+   * Generate a cryptographically secure random key from the server
+   * Uses the /api/generate-key endpoint to generate a random key of the specified size
+   * Also sets IV if provided by the server
+   */
   const generateRandomKey = async () => {
     try {
+      // Request random key generation from server
       const response = await axios.post('/api/generate-key', 
-        { key_size: keySize },
+        { key_size: keySize }, // Specify desired key size (128, 192, or 256)
         {
           headers: {
             'Content-Type': 'application/json'
           }
         }
       );
-      setKey(response.data.key);
+      setKey(response.data.key); // Set generated key
       if (response.data.iv) {
-        setIv(response.data.iv);
+        setIv(response.data.iv); // Set IV if provided
       }
       toast.success('Secure random key generated!');
     } catch (error) {
@@ -133,11 +210,17 @@ const Decrypt = () => {
     }
   };
 
+  /**
+   * Generate a random Initialization Vector (IV) or Tweak (for XTS mode)
+   * Uses Web Crypto API for cryptographically secure random generation
+   * XTS mode uses "Tweak" terminology but same 16-byte format
+   */
   const generateRandomIV = () => {
-    // XTS mode requires 16 bytes (32 hex chars), other modes can use 16 bytes
+    // XTS mode requires 16 bytes (32 hex chars), other modes also use 16 bytes
     const byteLength = mode === 'XTS' ? 16 : 16;
     const randomBytes = new Uint8Array(byteLength);
-    crypto.getRandomValues(randomBytes);
+    crypto.getRandomValues(randomBytes); // Cryptographically secure random generation
+    // Convert bytes to hex string
     const hexIV = Array.from(randomBytes)
       .map(b => b.toString(16).padStart(2, '0').toUpperCase())
       .join('');
@@ -145,9 +228,14 @@ const Decrypt = () => {
     toast.success(mode === 'XTS' ? 'Random Tweak generated!' : 'Random IV generated!');
   };
 
+  /**
+   * Generate a random nonce for CTR mode
+   * CTR mode uses a 12-byte nonce (24 hex characters)
+   */
   const generateRandomNonce = () => {
-    const randomBytes = new Uint8Array(12);
+    const randomBytes = new Uint8Array(12); // 12 bytes for CTR nonce
     crypto.getRandomValues(randomBytes);
+    // Convert bytes to hex string
     const hexNonce = Array.from(randomBytes)
       .map(b => b.toString(16).padStart(2, '0').toUpperCase())
       .join('');
@@ -384,15 +472,25 @@ const Decrypt = () => {
     }
   };
 
+  // ========== Main Decryption Functions ==========
+  
+  /**
+   * Main text decryption handler
+   * Validates inputs, calls appropriate API endpoint based on mode, and displays results
+   * Supports both standard modes (ECB/CBC) with visualization and advanced modes (CTR/CFB/OFB/XTS/GCM)
+   */
   const handleDecrypt = async () => {
     const cleanCiphertext = cleanedCiphertext;
     const cleanKey = cleanedKey;
 
+    // Input validation
     if (!cleanCiphertext || !cleanKey) {
       toast.error('Please enter both ciphertext and key');
       return;
     }
 
+    // Validate key length matches selected key size
+    // Key size in bits / 4 = hex characters (each hex char = 4 bits)
     const expectedLength = parseInt(keySize) / 4;
     if (cleanKey.length !== expectedLength) {
       toast.error(`Key must be exactly ${expectedLength} hex characters for AES-${keySize}`);
@@ -400,6 +498,7 @@ const Decrypt = () => {
     }
 
     // Auto-pad odd-length hex strings with a leading zero
+    // Ensures valid hex byte pairs (each byte = 2 hex chars)
     const processedCiphertext = cleanCiphertext.length % 2 !== 0 ? '0' + cleanCiphertext : cleanCiphertext;
     
     if (processedCiphertext.length === 0) {
@@ -407,6 +506,7 @@ const Decrypt = () => {
       return;
     }
 
+    // Validate hex format
     const hexRegex = /^[0-9A-F]+$/;
     if (!hexRegex.test(processedCiphertext)) {
       toast.error('Ciphertext contains non-hex characters');
@@ -418,12 +518,13 @@ const Decrypt = () => {
     }
 
     setLoading(true);
-    const startTime = performance.now();
+    const startTime = performance.now(); // Track decryption time for performance metrics
     
     try {
       let response;
       
-      // Use advanced decryption API for advanced modes
+      // Route to appropriate API endpoint based on encryption mode
+      // Advanced modes (CTR, CFB, OFB, XTS, GCM) use separate endpoint without visualization
       if (['CTR', 'CFB', 'OFB', 'XTS', 'GCM'].includes(mode)) {
         const payload = {
           ciphertext: processedCiphertext,
@@ -438,32 +539,37 @@ const Decrypt = () => {
           payload.iv = mode === 'XTS' ? iv : iv;
         }
         
+        // Call advanced decryption endpoint (no visualization support)
         response = await axios.post('/api/decrypt-advanced', payload);
         
-        // Create a simplified result structure
+        // Create a simplified result structure for advanced modes
+        // Advanced modes don't support step-by-step visualization
         const advancedResult = {
           final_plaintext: response.data.plaintext,
           plaintext: response.data.plaintext,
           mode: mode,
-          tag: response.data.tag,
-          // Add empty visualization data to prevent errors
+          tag: response.data.tag, // Authentication tag for GCM mode
+          // Add empty visualization data to prevent errors in UI
           rounds: [],
           initial_state: null,
           expanded_key: []
         };
         response.data = advancedResult;
       } else {
-        // Use standard decryption API for CBC/ECB
+        // Use standard decryption API for ECB/CBC modes
+        // These modes support full visualization (rounds, key expansion, matrix view)
         const payload = {
           ciphertext: processedCiphertext,
           key: cleanKey,
           key_size: keySize
         };
         
+        // Add IV for CBC mode (required for proper decryption)
         if (mode === 'CBC' && iv) {
           payload.iv = iv;
         }
         
+        // Call standard decrypt endpoint which returns visualization data
         response = await axios.post('/api/decrypt', payload);
       }
       

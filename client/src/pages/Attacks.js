@@ -1,3 +1,23 @@
+/**
+ * Attacks Page Component
+ * 
+ * Educational page about AES attacks and vulnerabilities
+ * 
+ * Content Sections:
+ * - Theoretical Attacks: Related-key attacks, differential cryptanalysis, etc.
+ * - Side-Channel Attacks: Timing attacks, power analysis, cache attacks
+ * - Implementation Attacks: Fault injection, key recovery
+ * - Real-World Attacks: Historical attacks on AES implementations
+ * - Protocol-Level Attacks: Padding oracle, chosen-plaintext attacks
+ * - Best Practices: Recommendations for secure AES usage
+ * 
+ * Features:
+ * - Expandable/collapsible sections
+ * - Severity indicators
+ * - Mitigation strategies
+ * - Affected AES variants
+ */
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -18,6 +38,7 @@ import {
 } from 'lucide-react';
 
 const Attacks = () => {
+  // Track which attack sections are expanded
   const [expandedSections, setExpandedSections] = useState({});
 
   const toggleSection = (sectionId) => {

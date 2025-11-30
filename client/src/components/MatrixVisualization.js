@@ -1,12 +1,36 @@
+/**
+ * Matrix Visualization Component
+ * 
+ * Displays the AES state matrix (4x4 grid) at each step of encryption/decryption
+ * Shows how the state matrix transforms through each round operation
+ * 
+ * Features:
+ * - Animated transitions between rounds
+ * - Play/pause/step controls
+ * - Column-major order display (AES standard)
+ * - Visual representation of state transformations
+ * 
+ * @param {string|array} initialState - Initial state matrix (hex string or 4x4 array)
+ * @param {array} rounds - Array of round data with state matrices
+ * @param {number} currentRound - Currently displayed round index
+ * @param {function} setCurrentRound - Function to change current round
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const MatrixVisualization = ({ initialState, rounds, currentRound, setCurrentRound }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1000);
+  // Animation state
+  const [isPlaying, setIsPlaying] = useState(false); // Auto-play animation state
+  const [speed, setSpeed] = useState(1000); // Animation speed in milliseconds
 
-  // Convert hex string to 4x4 matrix (column-major order)
+  /**
+   * Convert hex string to 4x4 matrix in column-major order
+   * AES uses column-major order: data[4*j + i] where j is column, i is row
+   * @param {string} hexString - 32-character hex string (16 bytes)
+   * @returns {array|null} - 4x4 matrix array or null if invalid
+   */
   const hexToMatrix = (hexString) => {
     if (!hexString || typeof hexString !== 'string') return null;
     
