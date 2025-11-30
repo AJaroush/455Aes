@@ -69,16 +69,22 @@ const History = () => {
   const checkEncryptionStatus = () => {
     const encrypted = isHistoryEncrypted();
     setIsEncrypted(encrypted);
+    
+    // Check if there's any history data
+    const hasEncryptHistory = localStorage.getItem('encryptionHistory');
+    const hasDecryptHistory = localStorage.getItem('decryptionHistory');
+    const hasAnyHistory = (hasEncryptHistory && hasEncryptHistory !== '[]') || 
+                          (hasDecryptHistory && hasDecryptHistory !== '[]');
+    
     if (encrypted) {
-      // Check if password is in sessionStorage (from current session)
-      const sessionPassword = sessionStorage.getItem('historyPassword');
-      if (sessionPassword) {
-        loadHistory(sessionPassword);
-      } else {
-        setShowPasswordModal(true);
-      }
+      // History is encrypted - always require password (no session storage)
+      setShowPasswordModal(true);
+    } else if (hasAnyHistory) {
+      // History exists but not encrypted - force password setup
+      setShowPasswordSetupModal(true);
     } else {
-      loadHistory();
+      // No history - still force password setup for future use
+      setShowPasswordSetupModal(true);
     }
   };
 
@@ -94,27 +100,43 @@ const History = () => {
         // Decrypt history
         setIsLoading(true);
         try {
+          // Check if data is encrypted (base64 format) or plain JSON
           if (encryptHistoryData && encryptHistoryData !== '[]') {
-            encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+            if (encryptHistoryData.startsWith('[')) {
+              // Plain JSON
+              encryptHistory = JSON.parse(encryptHistoryData);
+            } else {
+              // Encrypted (base64)
+              encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+            }
           }
           if (decryptHistoryData && decryptHistoryData !== '[]') {
-            decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+            if (decryptHistoryData.startsWith('[')) {
+              // Plain JSON
+              decryptHistory = JSON.parse(decryptHistoryData);
+            } else {
+              // Encrypted (base64)
+              decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+            }
           }
-          // Store password in sessionStorage for this session
-          sessionStorage.setItem('historyPassword', providedPassword);
+          // Don't store password in sessionStorage - require it every time
           setShowPasswordModal(false);
-          toast.success('History decrypted successfully!');
+          toast.success('History loaded successfully!');
         } catch (error) {
+          console.error('Decryption error:', error);
           toast.error('Failed to decrypt history. Wrong password?');
           setPassword('');
           return;
         } finally {
           setIsLoading(false);
         }
-      } else {
-        // Plain history (not encrypted)
+      } else if (!isEncrypted) {
+        // Plain history (not encrypted) - should not happen if password is required
         encryptHistory = JSON.parse(encryptHistoryData || '[]');
         decryptHistory = JSON.parse(decryptHistoryData || '[]');
+      } else {
+        // Encrypted but no password provided
+        return;
       }
       
       const combined = [
@@ -164,50 +186,80 @@ const History = () => {
 
     setIsLoading(true);
     try {
-      // If history exists, encrypt it with new password
+      // Get existing history (if any)
       const encryptHistoryData = localStorage.getItem('encryptionHistory');
       const decryptHistoryData = localStorage.getItem('decryptionHistory');
       
       let encryptHistoryList = [];
       let decryptHistoryList = [];
 
-      // Decrypt existing history if encrypted
-      if (isEncrypted && password) {
-        try {
-          if (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) {
-            encryptHistoryList = await decryptHistory(encryptHistoryData, password);
-          } else {
-            encryptHistoryList = JSON.parse(encryptHistoryData || '[]');
+      // Handle existing history
+      if (encryptHistoryData && encryptHistoryData !== '[]') {
+        if (isEncrypted && password) {
+          // Decrypt existing encrypted history with old password
+          try {
+            if (!encryptHistoryData.startsWith('[')) {
+              // Encrypted format
+              encryptHistoryList = await decryptHistory(encryptHistoryData, password);
+            } else {
+              // Plain JSON
+              encryptHistoryList = JSON.parse(encryptHistoryData);
+            }
+          } catch (error) {
+            console.error('Failed to decrypt encryption history:', error);
+            toast.error('Failed to decrypt existing history with current password');
+            setIsLoading(false);
+            return;
           }
-          if (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('[')) {
-            decryptHistoryList = await decryptHistory(decryptHistoryData, password);
-          } else {
-            decryptHistoryList = JSON.parse(decryptHistoryData || '[]');
+        } else {
+          // Plain history (not encrypted yet)
+          try {
+            encryptHistoryList = JSON.parse(encryptHistoryData);
+          } catch (error) {
+            encryptHistoryList = [];
           }
-        } catch (error) {
-          toast.error('Failed to decrypt existing history. Clearing and starting fresh.');
-          encryptHistoryList = [];
-          decryptHistoryList = [];
         }
-      } else {
-        // Plain history
-        encryptHistoryList = JSON.parse(encryptHistoryData || '[]');
-        decryptHistoryList = JSON.parse(decryptHistoryData || '[]');
+      }
+
+      if (decryptHistoryData && decryptHistoryData !== '[]') {
+        if (isEncrypted && password) {
+          // Decrypt existing encrypted history with old password
+          try {
+            if (!decryptHistoryData.startsWith('[')) {
+              // Encrypted format
+              decryptHistoryList = await decryptHistory(decryptHistoryData, password);
+            } else {
+              // Plain JSON
+              decryptHistoryList = JSON.parse(decryptHistoryData);
+            }
+          } catch (error) {
+            console.error('Failed to decrypt decryption history:', error);
+            toast.error('Failed to decrypt existing history with current password');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          // Plain history (not encrypted yet)
+          try {
+            decryptHistoryList = JSON.parse(decryptHistoryData);
+          } catch (error) {
+            decryptHistoryList = [];
+          }
+        }
       }
 
       // Encrypt with new password
       await saveHistory('encryptionHistory', encryptHistoryList, newPassword);
       await saveHistory('decryptionHistory', decryptHistoryList, newPassword);
       
-      // Set password in session
-      setHistoryPassword(newPassword);
+      // Update state
       setIsEncrypted(true);
       setShowPasswordSetupModal(false);
       setNewPassword('');
       setConfirmPassword('');
       setPassword('');
       
-      // Reload history
+      // Reload history with new password
       await loadHistory(newPassword);
       toast.success('Password set! History is now encrypted.');
     } catch (error) {
@@ -278,15 +330,25 @@ const History = () => {
   };
 
   const deleteItem = async (id, type) => {
+    // For deletion, we need the password - prompt user
+    if (isEncrypted && !password) {
+      toast.error('Please enter password to delete items');
+      setShowPasswordModal(true);
+      return;
+    }
+    
     const key = type === 'encrypt' ? 'encryptionHistory' : 'decryptionHistory';
-    const sessionPassword = sessionStorage.getItem('historyPassword');
     
     let stored;
-    if (isEncrypted && sessionPassword) {
+    if (isEncrypted && password) {
       try {
         const encryptedData = localStorage.getItem(key);
         if (encryptedData && encryptedData !== '[]') {
-          stored = await decryptHistory(encryptedData, sessionPassword);
+          if (encryptedData.startsWith('[')) {
+            stored = JSON.parse(encryptedData);
+          } else {
+            stored = await decryptHistory(encryptedData, password);
+          }
         } else {
           stored = [];
         }
@@ -301,13 +363,22 @@ const History = () => {
     const filtered = stored.filter(item => item.id !== id);
     
     // Re-encrypt if needed
-    if (isEncrypted && sessionPassword) {
-      // This will be handled by Encrypt/Decrypt pages when they save
-      // For now, we'll need to re-encrypt here
-      toast.error('Please use the Clear All button to remove encrypted history items');
-      return;
+    if (isEncrypted && password) {
+      try {
+        await saveHistory(key, filtered, password);
+        await loadHistory(password);
+        toast.success('Item deleted!');
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast.error('Failed to save after deletion');
+      }
+    } else if (isEncrypted) {
+      toast.error('Please enter password to delete items');
+      setShowPasswordModal(true);
     } else {
       localStorage.setItem(key, JSON.stringify(filtered));
+      loadHistory();
+      toast.success('Item deleted!');
     }
     
     await loadHistory(sessionPassword || null);
@@ -538,12 +609,13 @@ const History = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    setShowPasswordModal(false);
-                    setHistory([]);
+                    // Don't allow skipping - force password entry
+                    toast.error('Password is required to view encrypted history');
                   }}
-                  className="px-4 py-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-white/20 transition-all"
+                  className="px-4 py-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-white/20 transition-all opacity-50 cursor-not-allowed"
+                  disabled
                 >
-                  Skip
+                  Password Required
                 </motion.button>
               </div>
             </form>
@@ -716,14 +788,13 @@ const History = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    setShowPasswordSetupModal(false);
-                    setNewPassword('');
-                    setConfirmPassword('');
-                    setPassword('');
+                    // Don't allow canceling - force password setup
+                    toast.error('Password setup is required to use history feature');
                   }}
-                  className="px-4 py-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-white/20 transition-all"
+                  className="px-4 py-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-white/20 transition-all opacity-50 cursor-not-allowed"
+                  disabled
                 >
-                  Cancel
+                  Required
                 </motion.button>
               </div>
             </form>
