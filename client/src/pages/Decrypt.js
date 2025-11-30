@@ -33,7 +33,7 @@ import jsPDF from 'jspdf';
 import MatrixVisualization from '../components/MatrixVisualization';
 import RoundVisualization from '../components/RoundVisualization';
 import KeyExpansion from '../components/KeyExpansion';
-import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted } from '../utils/historyEncryption';
+import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted, decryptHistory } from '../utils/historyEncryption';
 
 const Decrypt = () => {
   const [ciphertext, setCiphertext] = useState('');
@@ -43,9 +43,7 @@ const Decrypt = () => {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('rounds');
-  const [autoPlay, setAutoPlay] = useState(false);
   const [currentRound, setCurrentRound] = useState(0);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [usePassword, setUsePassword] = useState(false);
@@ -55,7 +53,9 @@ const Decrypt = () => {
   const [showIV, setShowIV] = useState(false);
   const [decryptionHistory, setDecryptionHistory] = useState([]);
   const [keyMode, setKeyMode] = useState('hex'); // 'hex' or 'password'
-  const [mode, setMode] = useState('CBC'); // 'CBC' or 'ECB'
+  const [mode, setMode] = useState('CBC'); // 'CBC', 'ECB', 'CTR', 'CFB', 'OFB', 'XTS', 'GCM'
+  const [nonce, setNonce] = useState('');
+  const [showAdvancedModes, setShowAdvancedModes] = useState(false);
   const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
 
@@ -137,14 +137,27 @@ const Decrypt = () => {
   };
 
   const generateRandomIV = () => {
-    const randomBytes = new Uint8Array(16);
+    // XTS mode requires 16 bytes (32 hex chars), other modes can use 16 bytes
+    const byteLength = mode === 'XTS' ? 16 : 16;
+    const randomBytes = new Uint8Array(byteLength);
     crypto.getRandomValues(randomBytes);
     const hexIV = Array.from(randomBytes)
       .map(b => b.toString(16).padStart(2, '0').toUpperCase())
       .join('');
     setIv(hexIV);
-    toast.success('Random IV generated!');
+    toast.success(mode === 'XTS' ? 'Random Tweak generated!' : 'Random IV generated!');
   };
+
+  const generateRandomNonce = () => {
+    const randomBytes = new Uint8Array(12);
+    crypto.getRandomValues(randomBytes);
+    const hexNonce = Array.from(randomBytes)
+      .map(b => b.toString(16).padStart(2, '0').toUpperCase())
+      .join('');
+    setNonce(hexNonce);
+    toast.success('Random nonce generated!');
+  };
+
 
   const generateRandomCiphertext = () => {
     // Generate random bytes (any length from 1-32 bytes, 2-64 hex characters)
@@ -341,9 +354,26 @@ const Decrypt = () => {
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
       // Save to localStorage with optional encryption
-      const stored = loadHistorySafely('decryptionHistory');
+      // Check if history is encrypted before loading
+      const existingData = localStorage.getItem('decryptionHistory');
+      const isEncrypted = existingData && existingData !== '[]' && !existingData.startsWith('[');
+      const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
+      
+      let stored = [];
+      if (isEncrypted && password) {
+        // Decrypt existing history, add new entry, then re-encrypt
+        try {
+          stored = await decryptHistory(existingData, password);
+        } catch (error) {
+          console.error('Failed to decrypt history for update:', error);
+          stored = [];
+        }
+      } else {
+        // Load plain history
+        stored = loadHistorySafely('decryptionHistory');
+      }
+      
       stored.unshift(historyEntry);
-      const password = getHistoryPassword();
       await saveHistory('decryptionHistory', stored.slice(0, 100), password);
 
       toast.success(`File decrypted successfully! (${speed} KB/s)`);
@@ -415,9 +445,26 @@ const Decrypt = () => {
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
       // Save to localStorage with optional encryption
-      const stored = loadHistorySafely('decryptionHistory');
+      // Check if history is encrypted before loading
+      const existingData = localStorage.getItem('decryptionHistory');
+      const isEncrypted = existingData && existingData !== '[]' && !existingData.startsWith('[');
+      const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
+      
+      let stored = [];
+      if (isEncrypted && password) {
+        // Decrypt existing history, add new entry, then re-encrypt
+        try {
+          stored = await decryptHistory(existingData, password);
+        } catch (error) {
+          console.error('Failed to decrypt history for update:', error);
+          stored = [];
+        }
+      } else {
+        // Load plain history
+        stored = loadHistorySafely('decryptionHistory');
+      }
+      
       stored.unshift(historyEntry);
-      const password = getHistoryPassword();
       await saveHistory('decryptionHistory', stored.slice(0, 100), password);
       
       setResults(response.data);
@@ -724,46 +771,127 @@ const Decrypt = () => {
                 </div>
               </div>
 
-              {/* Encryption Mode */}
+              {/* Decryption Mode Selection */}
               <div className="mb-6">
                 <label className="block text-gray-900 dark:text-white font-medium mb-3 flex items-center">
-                  Encryption Mode
+                  Decryption Mode
                   <div className="group relative ml-2">
-                    <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 p-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none border border-gray-700 whitespace-normal">
-                      CBC mode requires an IV (Initialization Vector). ECB mode does not use an IV.
+                    <Info className="h-4 w-4 text-gray-500 dark:text-gray-400 cursor-help" />
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-80 p-2 bg-gray-800 dark:bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none border border-gray-700 whitespace-normal shadow-lg">
+                      <strong>Basic:</strong> CBC (recommended), ECB<br/>
+                      <strong>Advanced:</strong> CTR (streaming), CFB, OFB, XTS (disk), GCM (authenticated)
                     </div>
                   </div>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setMode('CBC')}
-                    className={`p-2 rounded-lg font-semibold text-sm transition-all cursor-pointer ${
-                      mode === 'CBC'
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white'
-                        : 'glass text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10'
-                    }`}
-                    type="button"
-                  >
-                    CBC
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setMode('ECB')}
-                    className={`p-2 rounded-lg font-semibold text-sm transition-all cursor-pointer ${
-                      mode === 'ECB'
-                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
-                        : 'glass text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10'
-                    }`}
-                    type="button"
-                  >
-                    ECB
-                  </motion.button>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {['CBC', 'ECB'].map((m) => (
+                    <motion.button
+                      key={m}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setMode(m)}
+                      className={`p-2 rounded-lg font-semibold text-sm transition-all ${
+                        mode === m
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                          : 'glass text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                      }`}
+                    >
+                      {m}
+                    </motion.button>
+                  ))}
                 </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowAdvancedModes(!showAdvancedModes)}
+                  className="w-full p-2 rounded-lg text-sm font-semibold glass text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 flex items-center justify-center"
+                >
+                  {showAdvancedModes ? 'Hide' : 'Show'} Advanced Modes
+                  {showAdvancedModes ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                </motion.button>
+                {showAdvancedModes && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-2 grid grid-cols-2 gap-2"
+                  >
+                    {['CTR', 'CFB', 'OFB', 'XTS', 'GCM'].map((m) => (
+                      <motion.button
+                        key={m}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setMode(m)}
+                        className={`p-2 rounded-lg font-semibold text-xs transition-all ${
+                          mode === m
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                            : 'glass text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        {m}
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
               </div>
+
+              {/* IV/Nonce Input (for modes that need it) */}
+              {(mode === 'CBC' || mode === 'CFB' || mode === 'OFB' || mode === 'GCM' || mode === 'XTS') && (
+                <div className="mb-6">
+                  <label className="block text-gray-900 dark:text-white font-medium mb-3 flex items-center">
+                    {mode === 'XTS' ? 'Tweak (for XTS mode)' : 'IV (Initialization Vector)'}
+                    <div className="group relative ml-2">
+                      <Info className="h-4 w-4 text-gray-500 dark:text-gray-400 cursor-help" />
+                      <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-800 dark:bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 border border-gray-700 shadow-lg">
+                        {mode === 'XTS' 
+                          ? 'XTS mode uses a tweak value (similar to IV) for disk encryption. Enter 32 hex characters (16 bytes).'
+                          : 'Enter any length hex characters (will be padded automatically)'}
+                      </div>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={generateRandomIV}
+                      className="ml-2 p-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded text-xs font-semibold hover:from-green-600 hover:to-emerald-700"
+                    >
+                      Generate
+                    </motion.button>
+                  </label>
+                  <input
+                    type="text"
+                    value={iv}
+                    onChange={(e) => setIv(e.target.value.toUpperCase())}
+                    placeholder={mode === 'XTS' ? 'Enter 32 hex characters (16 bytes) for tweak' : 'Enter any length hex characters (will be padded automatically)'}
+                    className="input-clean w-full p-3 rounded-lg font-mono text-sm"
+                    maxLength={mode === 'XTS' ? 32 : undefined}
+                  />
+                </div>
+              )}
+
+              {/* Nonce Input (for CTR mode) */}
+              {mode === 'CTR' && (
+                <div className="mb-6">
+                  <label className="block text-gray-900 dark:text-white font-medium mb-3 flex items-center">
+                    Nonce (for CTR mode)
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={generateRandomNonce}
+                      className="ml-2 p-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded text-xs font-semibold hover:from-green-600 hover:to-emerald-700"
+                    >
+                      Generate
+                    </motion.button>
+                  </label>
+                  <input
+                    type="text"
+                    value={nonce}
+                    onChange={(e) => setNonce(e.target.value.toUpperCase())}
+                    placeholder="Enter 24 hex characters (12 bytes)"
+                    className="input-clean w-full p-3 rounded-lg font-mono text-sm"
+                    maxLength={24}
+                  />
+                </div>
+              )}
 
               {/* Ciphertext Input / File Upload */}
               <div className="mb-6">
@@ -1198,40 +1326,6 @@ const Decrypt = () => {
                 </div>
               )}
 
-              {/* Advanced Options */}
-              <div className="mb-6">
-                <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center justify-between w-full p-3 glass rounded-lg text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20 transition-all duration-300 border-clean"
-                >
-                  <span className="flex items-center">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Advanced Options
-                  </span>
-                  {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </button>
-                
-                {showAdvanced && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="mt-3 space-y-3"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        id="auto-play-decrypt"
-                        checked={autoPlay}
-                        onChange={(e) => setAutoPlay(e.target.checked)}
-                        className="w-4 h-4 text-purple-600 bg-white/10 border-white/20 rounded focus:ring-purple-500"
-                      />
-                      <label htmlFor="auto-play-decrypt" className="text-gray-900 dark:text-white">Auto-play animation</label>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
 
               {/* Decryption History */}
               {decryptionHistory.length > 0 && (
@@ -1437,7 +1531,7 @@ const Decrypt = () => {
                     rounds={results.rounds}
                     currentRound={currentRound}
                     setCurrentRound={setCurrentRound}
-                    autoPlay={autoPlay}
+                    autoPlay={false}
                   />
                 )}
 
