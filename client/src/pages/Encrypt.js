@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { 
   Zap, 
   Eye, 
@@ -772,7 +771,7 @@ const Encrypt = () => {
             
             <div className="mb-6">
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                To protect your encryption history, please set a password on the History page first. This will encrypt and secure all your encryption/decryption records.
+                To protect your encryption history, please go to the <strong>History page</strong> and set a password first. This will encrypt and secure all your encryption/decryption records.
               </p>
               <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4 mb-4">
                 <div className="flex items-start space-x-2">
@@ -787,26 +786,14 @@ const Encrypt = () => {
                   </div>
                 </div>
               </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mt-4">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong>Next step:</strong> Navigate to the <strong>History</strong> page from the menu to set your password.
+                </p>
+              </div>
             </div>
             
             <div className="flex gap-3">
-              <Link
-                to="/history"
-                onClick={() => {
-                  setShowPasswordPrompt(false);
-                  localStorage.setItem('encryptPasswordPromptSeen', 'true');
-                }}
-                className="flex-1"
-              >
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all flex items-center justify-center space-x-2"
-                >
-                  <span>Go to History</span>
-                  <ArrowRight className="h-5 w-5" />
-                </motion.button>
-              </Link>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -814,9 +801,9 @@ const Encrypt = () => {
                   setShowPasswordPrompt(false);
                   localStorage.setItem('encryptPasswordPromptSeen', 'true');
                 }}
-                className="px-4 py-3 glass text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
+                className="flex-1 px-4 py-3 glass text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
               >
-                Maybe Later
+                Got It
               </motion.button>
             </div>
           </motion.div>
