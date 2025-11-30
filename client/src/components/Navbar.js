@@ -105,11 +105,12 @@ const Navbar = () => {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - hidden on mobile, visible on medium+ screens */}
           <div className="hidden md:flex items-center space-x-1 relative">
+            {/* Render main navigation items (Home, Encrypt, Decrypt) */}
             {mainNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const Icon = item.icon; // Get icon component for this nav item
+              const isActive = location.pathname === item.path; // Check if current route matches
               
               return (
                 <Link
@@ -127,12 +128,13 @@ const Navbar = () => {
               );
             })}
             
-            {/* More Dropdown */}
+            {/* More Dropdown - contains secondary navigation items */}
             <div className="relative" ref={moreDropdownRef}>
+              {/* Dropdown toggle button with hover/tap animations */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setMoreOpen(!moreOpen)}
+                whileHover={{ scale: 1.02 }} // Slight scale on hover
+                whileTap={{ scale: 0.98 }} // Slight scale down on click
+                onClick={() => setMoreOpen(!moreOpen)} // Toggle dropdown visibility
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
                   moreNavItems.some(item => location.pathname === item.path)
                     ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30'
@@ -185,22 +187,25 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons - Theme toggle and GitHub link (desktop only) */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Theme toggle button - switches between dark and light mode */}
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={toggleTheme}
+              whileHover={{ scale: 1.05 }} // Scale up on hover
+              whileTap={{ scale: 0.95 }} // Scale down on click
+              onClick={toggleTheme} // Toggle theme via context
               className="p-2 text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-all duration-300"
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
+              {/* Show sun icon in dark mode, moon icon in light mode */}
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </motion.button>
             
+            {/* GitHub repository link - opens in new tab */}
             <motion.a
               href="https://github.com/AJaroush/455Aes"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener noreferrer" // Security: prevent new page from accessing window.opener
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="p-2 text-gray-700 dark:text-white/80 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-all duration-300"
@@ -209,7 +214,7 @@ const Navbar = () => {
             </motion.a>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu button - only visible on mobile devices */}
           <div className="md:hidden">
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -221,19 +226,20 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - slides down when menu button is clicked */}
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, height: 0 }} // Start hidden and collapsed
+            animate={{ opacity: 1, height: 'auto' }} // Fade in and expand
+            exit={{ opacity: 0, height: 0 }} // Fade out and collapse when closing
+            transition={{ duration: 0.3 }} // Smooth animation
             className="md:hidden border-t border-gray-200 dark:border-white/20"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
+              {/* Render all navigation items (main + more) in mobile menu */}
               {allNavItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.path;
+                const isActive = location.pathname === item.path; // Highlight active route
                 
                 return (
                   <Link
