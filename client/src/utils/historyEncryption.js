@@ -184,6 +184,7 @@ export async function saveHistory(key, data, password = null) {
       }
     } else {
       // Save as plain JSON (only if it wasn't encrypted before)
+      // Always save, even if empty array - this ensures history is persisted
       localStorage.setItem(key, JSON.stringify(sanitizedData));
       // Don't change encryption status flags if they weren't set
     }

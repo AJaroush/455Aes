@@ -27,11 +27,12 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { ciphertext, key, key_size } = JSON.parse(event.body);
+    const { ciphertext, key, key_size, iv, mode = 'ECB' } = JSON.parse(event.body);
     
     // Normalize inputs (strip whitespace/newlines) and uppercase
     const cleanCiphertext = (ciphertext || '').replace(/\s+/g, '').toUpperCase();
     const cleanKey = (key || '').replace(/\s+/g, '').toUpperCase();
+    const cleanIV = iv ? (iv || '').replace(/\s+/g, '').toUpperCase() : null;
     
     // Validate inputs
     if (!cleanCiphertext || !cleanKey || !key_size) {
@@ -56,6 +57,28 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ 
           error: `Key must be exactly ${expectedKeyLength} hex characters for AES-${key_size}`
         })
+      };
+    }
+
+    // Validate IV for CBC mode
+    if (mode === 'CBC' && !cleanIV) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'IV is required for CBC mode decryption' })
+      };
+    }
+    if (mode === 'CBC' && cleanIV && cleanIV.length !== 32) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'IV must be exactly 32 hex characters (16 bytes)' })
       };
     }
 
@@ -109,22 +132,27 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ error: 'Key contains non-hex characters' })
       };
     }
+    if (cleanIV && !hexRegex.test(cleanIV)) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ error: 'IV contains non-hex characters' })
+      };
+    }
 
     // Create AES instance and decrypt
     const aes = new AESEnhanced(parseInt(key_size));
     let results;
     
     try {
-      // If ciphertext is exactly 16 bytes (32 hex chars), use original AES for visualization
-      if (processedCiphertext.length === 32) {
-        const basicAes = new AES(parseInt(key_size));
-        results = basicAes.decrypt(processedCiphertext, processedKey);
-      } else {
-        // For other lengths, decrypt first block with full visualization, then process remaining blocks
+      if (mode === 'CBC' && cleanIV) {
+        // CBC mode decryption with visualization
         const ciphertextBytes = aes.hexToBytes(processedCiphertext);
-        const decryptedBlocks = [];
         
-        // Decrypt first block using original AES for visualization
+        // Decrypt first block using original AES for visualization (before CBC XOR)
         const firstBlockHex = aes.bytesToHex(ciphertextBytes.slice(0, 16));
         const basicAes = new AES(parseInt(key_size));
         const firstBlockResult = basicAes.decrypt(firstBlockHex, processedKey);
@@ -134,49 +162,104 @@ exports.handler = async (event, context) => {
         const visualizationExpandedKey = firstBlockResult.expanded_key || [];
         const visualizationInitialState = firstBlockResult.initial_state || null;
         
-        // Add first block decrypted bytes
-        const firstBlockPlaintextHex = firstBlockResult.final_plaintext || firstBlockResult.plaintext || '';
-        const firstBlockPlaintextBytes = aes.hexToBytes(firstBlockPlaintextHex);
-        decryptedBlocks.push(...firstBlockPlaintextBytes);
+        // Now decrypt using CBC mode
+        const decryptedBytes = aes.decryptCBC(ciphertextBytes, processedKey, cleanIV);
         
-        // Decrypt remaining blocks using AESEnhanced
-        for (let i = 16; i < ciphertextBytes.length; i += 16) {
-          const block = ciphertextBytes.slice(i, i + 16);
-          if (block.length === 16) {
-            const decryptedBlock = aes.decryptBlock(block, processedKey);
-            decryptedBlocks.push(...decryptedBlock);
-          }
-        }
-        
-        // Try to remove PKCS7 padding, but handle invalid padding gracefully
+        // Try to remove PKCS7 padding
         let unpadded;
         try {
-          unpadded = aes.pkcs7Unpad(decryptedBlocks);
+          unpadded = aes.pkcs7Unpad(decryptedBytes);
         } catch (paddingError) {
           if (wasAutoPadded) {
             const completeBlocks = Math.floor(originalByteLength / 16) * 16;
             if (completeBlocks > 0) {
-              const trimmedBlocks = decryptedBlocks.slice(0, completeBlocks);
+              const trimmedBlocks = decryptedBytes.slice(0, completeBlocks);
               try {
                 unpadded = aes.pkcs7Unpad(trimmedBlocks);
               } catch (e) {
                 unpadded = trimmedBlocks;
               }
             } else {
-              unpadded = decryptedBlocks.slice(0, Math.min(originalByteLength, decryptedBlocks.length));
+              unpadded = decryptedBytes.slice(0, Math.min(originalByteLength, decryptedBytes.length));
             }
           } else {
-            unpadded = decryptedBlocks;
+            unpadded = decryptedBytes;
           }
         }
+        
         results = {
           final_plaintext: aes.bytesToHex(unpadded),
           plaintext: aes.bytesToHex(unpadded),
-          mode: 'ECB',
+          mode: 'CBC',
           rounds: visualizationRounds,
           initial_state: visualizationInitialState,
           expanded_key: visualizationExpandedKey
         };
+      } else {
+        // ECB mode (default)
+        // If ciphertext is exactly 16 bytes (32 hex chars), use original AES for visualization
+        if (processedCiphertext.length === 32) {
+          const basicAes = new AES(parseInt(key_size));
+          results = basicAes.decrypt(processedCiphertext, processedKey);
+        } else {
+          // For other lengths, decrypt first block with full visualization, then process remaining blocks
+          const ciphertextBytes = aes.hexToBytes(processedCiphertext);
+          const decryptedBlocks = [];
+          
+          // Decrypt first block using original AES for visualization
+          const firstBlockHex = aes.bytesToHex(ciphertextBytes.slice(0, 16));
+          const basicAes = new AES(parseInt(key_size));
+          const firstBlockResult = basicAes.decrypt(firstBlockHex, processedKey);
+          
+          // Get visualization data from first block
+          const visualizationRounds = firstBlockResult.rounds || [];
+          const visualizationExpandedKey = firstBlockResult.expanded_key || [];
+          const visualizationInitialState = firstBlockResult.initial_state || null;
+          
+          // Add first block decrypted bytes
+          const firstBlockPlaintextHex = firstBlockResult.final_plaintext || firstBlockResult.plaintext || '';
+          const firstBlockPlaintextBytes = aes.hexToBytes(firstBlockPlaintextHex);
+          decryptedBlocks.push(...firstBlockPlaintextBytes);
+          
+          // Decrypt remaining blocks using AESEnhanced
+          for (let i = 16; i < ciphertextBytes.length; i += 16) {
+            const block = ciphertextBytes.slice(i, i + 16);
+            if (block.length === 16) {
+              const decryptedBlock = aes.decryptBlock(block, processedKey);
+              decryptedBlocks.push(...decryptedBlock);
+            }
+          }
+          
+          // Try to remove PKCS7 padding, but handle invalid padding gracefully
+          let unpadded;
+          try {
+            unpadded = aes.pkcs7Unpad(decryptedBlocks);
+          } catch (paddingError) {
+            if (wasAutoPadded) {
+              const completeBlocks = Math.floor(originalByteLength / 16) * 16;
+              if (completeBlocks > 0) {
+                const trimmedBlocks = decryptedBlocks.slice(0, completeBlocks);
+                try {
+                  unpadded = aes.pkcs7Unpad(trimmedBlocks);
+                } catch (e) {
+                  unpadded = trimmedBlocks;
+                }
+              } else {
+                unpadded = decryptedBlocks.slice(0, Math.min(originalByteLength, decryptedBlocks.length));
+              }
+            } else {
+              unpadded = decryptedBlocks;
+            }
+          }
+          results = {
+            final_plaintext: aes.bytesToHex(unpadded),
+            plaintext: aes.bytesToHex(unpadded),
+            mode: 'ECB',
+            rounds: visualizationRounds,
+            initial_state: visualizationInitialState,
+            expanded_key: visualizationExpandedKey
+          };
+        }
       }
     } catch (e) {
       const msg = String(e.message || e);
