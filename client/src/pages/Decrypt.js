@@ -359,21 +359,36 @@ const Decrypt = () => {
       const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
       
       let stored = [];
+      let decryptionSucceeded = false;
+      
       if (isEncrypted && password) {
         // Decrypt existing history, add new entry, then re-encrypt
         try {
           stored = await decryptHistory(existingData, password);
+          decryptionSucceeded = true;
         } catch (error) {
           console.error('Failed to decrypt history for update:', error);
-          stored = [];
+          // Don't overwrite existing encrypted data if decryption fails
+          // Just skip saving this entry to preserve existing history
+          toast.warning('Could not update history: Failed to decrypt existing history. Your existing history is preserved.');
+          return;
         }
-      } else {
+      } else if (!isEncrypted) {
         // Load plain history
         stored = loadHistorySafely('decryptionHistory');
+        decryptionSucceeded = true;
+      } else {
+        // Encrypted but no password - can't save, preserve existing data
+        console.warn('Cannot save history: encrypted but no password available');
+        toast.warning('Could not save history: Password required. Your existing history is preserved.');
+        return;
       }
       
-      stored.unshift(historyEntry);
-      await saveHistory('decryptionHistory', stored.slice(0, 100), password);
+      // Only proceed if we successfully loaded/decrypted existing history
+      if (decryptionSucceeded) {
+        stored.unshift(historyEntry);
+        await saveHistory('decryptionHistory', stored.slice(0, 100), password);
+      }
 
       toast.success(`File decrypted successfully! (${speed} KB/s)`);
       setSelectedFile(null);
@@ -491,21 +506,36 @@ const Decrypt = () => {
       const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
       
       let stored = [];
+      let decryptionSucceeded = false;
+      
       if (isEncrypted && password) {
         // Decrypt existing history, add new entry, then re-encrypt
         try {
           stored = await decryptHistory(existingData, password);
+          decryptionSucceeded = true;
         } catch (error) {
           console.error('Failed to decrypt history for update:', error);
-          stored = [];
+          // Don't overwrite existing encrypted data if decryption fails
+          // Just skip saving this entry to preserve existing history
+          toast.warning('Could not update history: Failed to decrypt existing history. Your existing history is preserved.');
+          return;
         }
-      } else {
+      } else if (!isEncrypted) {
         // Load plain history
         stored = loadHistorySafely('decryptionHistory');
+        decryptionSucceeded = true;
+      } else {
+        // Encrypted but no password - can't save, preserve existing data
+        console.warn('Cannot save history: encrypted but no password available');
+        toast.warning('Could not save history: Password required. Your existing history is preserved.');
+        return;
       }
       
-      stored.unshift(historyEntry);
-      await saveHistory('decryptionHistory', stored.slice(0, 100), password);
+      // Only proceed if we successfully loaded/decrypted existing history
+      if (decryptionSucceeded) {
+        stored.unshift(historyEntry);
+        await saveHistory('decryptionHistory', stored.slice(0, 100), password);
+      }
       
       setResults(response.data);
       setCurrentRound(0);
