@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
-import { decryptHistory, isHistoryEncrypted, encryptHistory, setHistoryPassword, setHistoryEncryptionStatus, saveHistory } from '../utils/historyEncryption';
+import { decryptHistory, setHistoryPassword, saveHistory } from '../utils/historyEncryption';
 
 const History = () => {
   const [history, setHistory] = useState([]);
@@ -42,7 +42,7 @@ const History = () => {
       uppercase: /[A-Z]/.test(pwd),
       lowercase: /[a-z]/.test(pwd),
       number: /[0-9]/.test(pwd),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+      special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pwd)
     };
 
     const strength = {

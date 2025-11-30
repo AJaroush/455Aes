@@ -110,14 +110,18 @@ export async function decryptHistory(encryptedData, password) {
  * Check if history is encrypted (has password protection)
  */
 export function isHistoryEncrypted() {
-  const encryptHistory = localStorage.getItem('encryptionHistory');
-  const decryptHistory = localStorage.getItem('decryptionHistory');
+  const encryptHistoryData = localStorage.getItem('encryptionHistory');
+  const decryptHistoryData = localStorage.getItem('decryptionHistory');
   
   // Check if either has the encrypted flag or if they're base64 strings (encrypted)
   const hasEncryptFlag = localStorage.getItem('historyEncrypted') === 'true';
   const hasDecryptFlag = localStorage.getItem('decryptionHistoryEncrypted') === 'true';
   
-  return hasEncryptFlag || hasDecryptFlag;
+  // Also check if data exists and is encrypted (base64, not JSON)
+  const hasEncryptedData = (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) ||
+                          (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('['));
+  
+  return hasEncryptFlag || hasDecryptFlag || hasEncryptedData;
 }
 
 /**
