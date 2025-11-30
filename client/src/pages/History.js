@@ -207,9 +207,36 @@ const History = () => {
           setIsLoading(false);
         }
       } else if (!isEncrypted) {
-        // Plain history (not encrypted) - should not happen if password is required
-        encryptHistoryList = JSON.parse(encryptHistoryData || '[]');
-        decryptHistoryList = JSON.parse(decryptHistoryData || '[]');
+        // Plain history (not encrypted) - parse as JSON
+        try {
+          if (encryptHistoryData && encryptHistoryData !== '[]') {
+            if (encryptHistoryData.startsWith('[')) {
+              encryptHistoryList = JSON.parse(encryptHistoryData);
+            } else {
+              // Looks like encrypted data but flags say not encrypted - skip it
+              console.warn('Encryption history appears encrypted but flags say not encrypted');
+              encryptHistoryList = [];
+            }
+          } else {
+            encryptHistoryList = [];
+          }
+          
+          if (decryptHistoryData && decryptHistoryData !== '[]') {
+            if (decryptHistoryData.startsWith('[')) {
+              decryptHistoryList = JSON.parse(decryptHistoryData);
+            } else {
+              // Looks like encrypted data but flags say not encrypted - skip it
+              console.warn('Decryption history appears encrypted but flags say not encrypted');
+              decryptHistoryList = [];
+            }
+          } else {
+            decryptHistoryList = [];
+          }
+        } catch (error) {
+          console.error('Error parsing plain history:', error);
+          encryptHistoryList = [];
+          decryptHistoryList = [];
+        }
       } else {
         // Encrypted but no password provided - can't load
         return;
