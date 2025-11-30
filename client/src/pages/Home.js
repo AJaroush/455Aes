@@ -5,7 +5,6 @@ import {
   Shield, 
   Zap, 
   Unlock,
-  GitCompare, 
   BookOpen, 
   ArrowRight,
   Lock,
@@ -36,14 +35,6 @@ const Home = () => {
       link: '/decrypt',
       color: 'from-purple-500 to-pink-500',
       highlights: ['File Decryption', 'CBC/ECB Support', 'Step-by-step View']
-    },
-    {
-      icon: GitCompare,
-      title: 'Compare Variants',
-      description: 'Compare different AES variants side by side to understand their differences',
-      link: '/compare',
-      color: 'from-blue-500 to-purple-500',
-      highlights: ['Side-by-side', 'Performance Metrics', 'Visual Comparison']
     },
     {
       icon: BookOpen,

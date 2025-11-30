@@ -7,7 +7,6 @@ import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Encrypt from './pages/Encrypt';
 import Decrypt from './pages/Decrypt';
-import Compare from './pages/Compare';
 import Tutorial from './pages/Tutorial';
 import About from './pages/About';
 import History from './pages/History';
@@ -26,7 +25,6 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/encrypt" element={<Encrypt />} />
               <Route path="/decrypt" element={<Decrypt />} />
-              <Route path="/compare" element={<Compare />} />
               <Route path="/tutorial" element={<Tutorial />} />
               <Route path="/attacks" element={<Attacks />} />
               <Route path="/about" element={<About />} />

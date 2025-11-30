@@ -417,64 +417,6 @@ const Tutorial = () => {
           </div>
         </div>
       )
-    },
-    {
-      id: 'comparison',
-      title: 'AES Variants Comparison',
-      icon: TrendingUp,
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600 dark:text-gray-300">
-            Compare the three AES variants to choose the right one for your needs.
-          </p>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-white/5">
-                  <th className="border border-gray-200 dark:border-white/10 p-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Variant</th>
-                  <th className="border border-gray-200 dark:border-white/10 p-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Key Size</th>
-                  <th className="border border-gray-200 dark:border-white/10 p-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Rounds</th>
-                  <th className="border border-gray-200 dark:border-white/10 p-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Security</th>
-                  <th className="border border-gray-200 dark:border-white/10 p-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Performance</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="hover:bg-gray-50 dark:hover:bg-white/5">
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm font-medium text-gray-900 dark:text-white">AES-128</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">128 bits</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">10</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-green-600 dark:text-green-400">High</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">Fastest</td>
-                </tr>
-                <tr className="hover:bg-gray-50 dark:hover:bg-white/5">
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm font-medium text-gray-900 dark:text-white">AES-192</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">192 bits</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">12</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-green-600 dark:text-green-400">Very High</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">Medium</td>
-                </tr>
-                <tr className="hover:bg-gray-50 dark:hover:bg-white/5">
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm font-medium text-gray-900 dark:text-white">AES-256</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">256 bits</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">14</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-green-600 dark:text-green-400">Highest</td>
-                  <td className="border border-gray-200 dark:border-white/10 p-3 text-sm text-gray-600 dark:text-gray-300">Slowest</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Recommendations</h4>
-            <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-              <li>• <strong>AES-128</strong>: Good for most applications, fastest performance</li>
-              <li>• <strong>AES-192</strong>: Balance between security and performance</li>
-              <li>• <strong>AES-256</strong>: Maximum security, recommended for highly sensitive data</li>
-            </ul>
-          </div>
-        </div>
-      )
     }
   ];
 

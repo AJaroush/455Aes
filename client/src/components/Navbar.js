@@ -8,7 +8,6 @@ import {
   Zap, 
   Unlock,
   BookOpen, 
-  GitCompare, 
   Info,
   Github,
   History,
@@ -36,7 +35,6 @@ const Navbar = () => {
   const moreNavItems = [
     { path: '/history', label: 'History', icon: History },
     { path: '/aes-history', label: 'AES History', icon: Calendar },
-    { path: '/compare', label: 'Compare', icon: GitCompare },
     { path: '/tutorial', label: 'Tutorial', icon: BookOpen },
     { path: '/attacks', label: 'Attacks', icon: AlertTriangle },
     { path: '/about', label: 'About', icon: Info },
