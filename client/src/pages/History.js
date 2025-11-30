@@ -10,30 +10,224 @@ import {
   Trash2,
   Search,
   Download,
-  Copy
+  Copy,
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
+import { decryptHistory, isHistoryEncrypted, encryptHistory, setHistoryPassword, setHistoryEncryptionStatus, saveHistory } from '../utils/historyEncryption';
 
 const History = () => {
   const [history, setHistory] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'encrypt', 'decrypt'
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPasswordSetupModal, setShowPasswordSetupModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEncrypted, setIsEncrypted] = useState(false);
 
   useEffect(() => {
-    loadHistory();
+    checkEncryptionStatus();
   }, []);
 
-  const loadHistory = () => {
-    const encryptHistory = JSON.parse(localStorage.getItem('encryptionHistory') || '[]');
-    const decryptHistory = JSON.parse(localStorage.getItem('decryptionHistory') || '[]');
-    
-    const combined = [
-      ...encryptHistory.map(item => ({ ...item, type: 'encrypt' })),
-      ...decryptHistory.map(item => ({ ...item, type: 'decrypt' }))
-    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-    setHistory(combined);
+  const checkEncryptionStatus = () => {
+    const encrypted = isHistoryEncrypted();
+    setIsEncrypted(encrypted);
+    if (encrypted) {
+      // Check if password is in sessionStorage (from current session)
+      const sessionPassword = sessionStorage.getItem('historyPassword');
+      if (sessionPassword) {
+        loadHistory(sessionPassword);
+      } else {
+        setShowPasswordModal(true);
+      }
+    } else {
+      loadHistory();
+    }
+  };
+
+  const loadHistory = async (providedPassword = null) => {
+    try {
+      const encryptHistoryData = localStorage.getItem('encryptionHistory');
+      const decryptHistoryData = localStorage.getItem('decryptionHistory');
+      
+      let encryptHistory = [];
+      let decryptHistory = [];
+      
+      if (isEncrypted && providedPassword) {
+        // Decrypt history
+        setIsLoading(true);
+        try {
+          if (encryptHistoryData && encryptHistoryData !== '[]') {
+            encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+          }
+          if (decryptHistoryData && decryptHistoryData !== '[]') {
+            decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+          }
+          // Store password in sessionStorage for this session
+          sessionStorage.setItem('historyPassword', providedPassword);
+          setShowPasswordModal(false);
+          toast.success('History decrypted successfully!');
+        } catch (error) {
+          toast.error('Failed to decrypt history. Wrong password?');
+          setPassword('');
+          return;
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Plain history (not encrypted)
+        encryptHistory = JSON.parse(encryptHistoryData || '[]');
+        decryptHistory = JSON.parse(decryptHistoryData || '[]');
+      }
+      
+      const combined = [
+        ...encryptHistory.map(item => ({ ...item, type: 'encrypt' })),
+        ...decryptHistory.map(item => ({ ...item, type: 'decrypt' }))
+      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      setHistory(combined);
+    } catch (error) {
+      console.error('Error loading history:', error);
+      toast.error('Failed to load history');
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!password) {
+      toast.error('Please enter a password');
+      return;
+    }
+    await loadHistory(password);
+  };
+
+  const handlePasswordSetup = async (e) => {
+    e.preventDefault();
+    if (!newPassword || !confirmPassword) {
+      toast.error('Please enter and confirm password');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // If history exists, encrypt it with new password
+      const encryptHistoryData = localStorage.getItem('encryptionHistory');
+      const decryptHistoryData = localStorage.getItem('decryptionHistory');
+      
+      let encryptHistoryList = [];
+      let decryptHistoryList = [];
+
+      // Decrypt existing history if encrypted
+      if (isEncrypted && password) {
+        try {
+          if (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) {
+            encryptHistoryList = await decryptHistory(encryptHistoryData, password);
+          } else {
+            encryptHistoryList = JSON.parse(encryptHistoryData || '[]');
+          }
+          if (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('[')) {
+            decryptHistoryList = await decryptHistory(decryptHistoryData, password);
+          } else {
+            decryptHistoryList = JSON.parse(decryptHistoryData || '[]');
+          }
+        } catch (error) {
+          toast.error('Failed to decrypt existing history. Clearing and starting fresh.');
+          encryptHistoryList = [];
+          decryptHistoryList = [];
+        }
+      } else {
+        // Plain history
+        encryptHistoryList = JSON.parse(encryptHistoryData || '[]');
+        decryptHistoryList = JSON.parse(decryptHistoryData || '[]');
+      }
+
+      // Encrypt with new password
+      await saveHistory('encryptionHistory', encryptHistoryList, newPassword);
+      await saveHistory('decryptionHistory', decryptHistoryList, newPassword);
+      
+      // Set password in session
+      setHistoryPassword(newPassword);
+      setIsEncrypted(true);
+      setShowPasswordSetupModal(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setPassword('');
+      
+      // Reload history
+      await loadHistory(newPassword);
+      toast.success('Password set! History is now encrypted.');
+    } catch (error) {
+      console.error('Password setup error:', error);
+      toast.error('Failed to set password: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemovePassword = async () => {
+    if (!window.confirm('Are you sure you want to remove password protection? This will decrypt your history.')) {
+      return;
+    }
+
+    if (!password) {
+      toast.error('Please enter current password to remove protection');
+      setShowPasswordModal(true);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Decrypt history
+      const encryptHistoryData = localStorage.getItem('encryptionHistory');
+      const decryptHistoryData = localStorage.getItem('decryptionHistory');
+      
+      let encryptHistoryList = [];
+      let decryptHistoryList = [];
+
+      if (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) {
+        encryptHistoryList = await decryptHistory(encryptHistoryData, password);
+      } else {
+        encryptHistoryList = JSON.parse(encryptHistoryData || '[]');
+      }
+      if (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('[')) {
+        decryptHistoryList = await decryptHistory(decryptHistoryData, password);
+      } else {
+        decryptHistoryList = JSON.parse(decryptHistoryData || '[]');
+      }
+
+      // Save as plain (no password)
+      await saveHistory('encryptionHistory', encryptHistoryList, null);
+      await saveHistory('decryptionHistory', decryptHistoryList, null);
+      
+      setHistoryPassword(null);
+      setIsEncrypted(false);
+      setPassword('');
+      setShowPasswordModal(false);
+      
+      await loadHistory();
+      toast.success('Password protection removed!');
+    } catch (error) {
+      console.error('Remove password error:', error);
+      toast.error('Failed to remove password: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearHistory = () => {
@@ -45,12 +239,40 @@ const History = () => {
     }
   };
 
-  const deleteItem = (id, type) => {
+  const deleteItem = async (id, type) => {
     const key = type === 'encrypt' ? 'encryptionHistory' : 'decryptionHistory';
-    const stored = JSON.parse(localStorage.getItem(key) || '[]');
+    const sessionPassword = sessionStorage.getItem('historyPassword');
+    
+    let stored;
+    if (isEncrypted && sessionPassword) {
+      try {
+        const encryptedData = localStorage.getItem(key);
+        if (encryptedData && encryptedData !== '[]') {
+          stored = await decryptHistory(encryptedData, sessionPassword);
+        } else {
+          stored = [];
+        }
+      } catch (error) {
+        toast.error('Failed to decrypt history for deletion');
+        return;
+      }
+    } else {
+      stored = JSON.parse(localStorage.getItem(key) || '[]');
+    }
+    
     const filtered = stored.filter(item => item.id !== id);
-    localStorage.setItem(key, JSON.stringify(filtered));
-    loadHistory();
+    
+    // Re-encrypt if needed
+    if (isEncrypted && sessionPassword) {
+      // This will be handled by Encrypt/Decrypt pages when they save
+      // For now, we'll need to re-encrypt here
+      toast.error('Please use the Clear All button to remove encrypted history items');
+      return;
+    } else {
+      localStorage.setItem(key, JSON.stringify(filtered));
+    }
+    
+    await loadHistory(sessionPassword || null);
     toast.success('Item deleted!');
   };
 
@@ -213,6 +435,205 @@ const History = () => {
 
   return (
     <div className="pt-16 min-h-screen bg-white dark:bg-black transition-colors duration-300">
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass rounded-2xl p-8 border-clean max-w-md w-full"
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-3 bg-cyan-500/20 rounded-lg">
+                <Lock className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  History Protected
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Enter password to view history
+                </p>
+              </div>
+            </div>
+            
+            <form onSubmit={handlePasswordSubmit}>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter history password"
+                    className="input-clean w-full pr-10"
+                    autoFocus
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                  Your history is encrypted. Enter the password you set when enabling history encryption.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={isLoading || !password}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Decrypting...' : 'Unlock History'}
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setHistory([]);
+                  }}
+                  className="px-4 py-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-white/20 transition-all"
+                >
+                  Skip
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Password Setup Modal */}
+      {showPasswordSetupModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass rounded-2xl p-8 border-clean max-w-md w-full"
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-3 bg-cyan-500/20 rounded-lg">
+                <Lock className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {isEncrypted ? 'Change Password' : 'Set Password'}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {isEncrypted ? 'Enter current password and new password' : 'Protect your history with encryption'}
+                </p>
+              </div>
+            </div>
+            
+            <form onSubmit={handlePasswordSetup}>
+              {isEncrypted && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter current password"
+                      className="input-clean w-full pr-10"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {isEncrypted ? 'New Password' : 'Password'}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={isEncrypted ? 'Enter new password' : 'Enter password (min 6 characters)'}
+                    className="input-clean w-full pr-10"
+                    autoFocus={!isEncrypted}
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className="input-clean w-full"
+                  disabled={isLoading}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                  {isEncrypted 
+                    ? 'Your history will be re-encrypted with the new password.'
+                    : 'Your history will be encrypted. Remember this password to access it later.'}
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={isLoading || !newPassword || !confirmPassword || (isEncrypted && !password)}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Processing...' : (isEncrypted ? 'Change Password' : 'Set Password')}
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setShowPasswordSetupModal(false);
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    setPassword('');
+                  }}
+                  className="px-4 py-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-white/20 transition-all"
+                >
+                  Cancel
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div
@@ -319,6 +740,29 @@ const History = () => {
                 <FileText className="h-4 w-4" />
                 <span>Export PDF</span>
               </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowPasswordSetupModal(true)}
+                className="px-4 py-2 bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-all flex items-center space-x-2"
+                title={isEncrypted ? "Change password" : "Set password protection"}
+              >
+                <Lock className="h-4 w-4" />
+                <span>{isEncrypted ? 'Change Password' : 'Set Password'}</span>
+              </motion.button>
+              {isEncrypted && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleRemovePassword}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  title="Remove password protection"
+                >
+                  <Unlock className="h-4 w-4" />
+                  <span>Remove Password</span>
+                </motion.button>
+              )}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

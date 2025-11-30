@@ -29,6 +29,7 @@ import jsPDF from 'jspdf';
 import MatrixVisualization from '../components/MatrixVisualization';
 import RoundVisualization from '../components/RoundVisualization';
 import KeyExpansion from '../components/KeyExpansion';
+import { saveHistory, getHistoryPassword } from '../utils/historyEncryption';
 
 const Encrypt = () => {
   const [message, setMessage] = useState('');
@@ -386,7 +387,7 @@ const Encrypt = () => {
       const endTime = performance.now();
       const speed = ((selectedFile.size / 1024) / ((endTime - startTime) / 1000)).toFixed(2);
 
-      // Add to history
+      // Add to history (without sensitive data)
       const fileMode = isTextFile ? (encryptionMode === 'ECB' ? 'ECB' : 'CBC') : (encryptionMode === 'ECB' ? 'ECB' : 'CBC');
       const historyEntry = {
         id: Date.now(),
@@ -396,15 +397,16 @@ const Encrypt = () => {
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
         mode: fileMode,
-        fileSize: selectedFile.size,
-        iv: isTextFile && fileMode === 'CBC' ? (response.data.iv || finalIV) : undefined
+        fileSize: selectedFile.size
+        // Removed: iv (sensitive data)
       };
       setEncryptionHistory([historyEntry, ...encryptionHistory.slice(0, 9)]);
       
-      // Save to localStorage
+      // Save to localStorage with optional encryption
       const stored = JSON.parse(localStorage.getItem('encryptionHistory') || '[]');
       stored.unshift(historyEntry);
-      localStorage.setItem('encryptionHistory', JSON.stringify(stored.slice(0, 100))); // Keep last 100
+      const password = getHistoryPassword();
+      await saveHistory('encryptionHistory', stored.slice(0, 100), password);
 
       toast.success(`File encrypted successfully! (${speed} KB/s)`);
       setSelectedFile(null);

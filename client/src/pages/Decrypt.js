@@ -30,6 +30,7 @@ import jsPDF from 'jspdf';
 import MatrixVisualization from '../components/MatrixVisualization';
 import RoundVisualization from '../components/RoundVisualization';
 import KeyExpansion from '../components/KeyExpansion';
+import { saveHistory, getHistoryPassword } from '../utils/historyEncryption';
 
 const Decrypt = () => {
   const [ciphertext, setCiphertext] = useState('');
@@ -325,10 +326,11 @@ const Decrypt = () => {
       };
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
-      // Save to localStorage
+      // Save to localStorage with optional encryption
       const stored = JSON.parse(localStorage.getItem('decryptionHistory') || '[]');
       stored.unshift(historyEntry);
-      localStorage.setItem('decryptionHistory', JSON.stringify(stored.slice(0, 100))); // Keep last 100
+      const password = getHistoryPassword();
+      await saveHistory('decryptionHistory', stored.slice(0, 100), password);
 
       toast.success(`File decrypted successfully! (${speed} KB/s)`);
       setSelectedFile(null);
@@ -385,7 +387,7 @@ const Decrypt = () => {
       const endTime = performance.now();
       const speed = ((processedCiphertext.length / 2 / 1024) / ((endTime - startTime) / 1000)).toFixed(2);
       
-      // Add to history
+      // Add to history (without sensitive data - fullCiphertext and fullPlaintext removed)
       const historyEntry = {
         id: Date.now(),
         type: 'text',
@@ -393,16 +395,16 @@ const Decrypt = () => {
         keySize,
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
-        plaintext: response.data.final_plaintext?.length > 16 ? response.data.final_plaintext.substring(0, 16) + '...' : response.data.final_plaintext,
-        fullCiphertext: processedCiphertext,
-        fullPlaintext: response.data.final_plaintext
+        plaintext: response.data.final_plaintext?.length > 16 ? response.data.final_plaintext.substring(0, 16) + '...' : response.data.final_plaintext
+        // Removed: fullCiphertext, fullPlaintext (sensitive data)
       };
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
-      // Save to localStorage
+      // Save to localStorage with optional encryption
       const stored = JSON.parse(localStorage.getItem('decryptionHistory') || '[]');
       stored.unshift(historyEntry);
-      localStorage.setItem('decryptionHistory', JSON.stringify(stored.slice(0, 100))); // Keep last 100
+      const password = getHistoryPassword();
+      await saveHistory('decryptionHistory', stored.slice(0, 100), password);
       
       setResults(response.data);
       setCurrentRound(0);
