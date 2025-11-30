@@ -71,6 +71,7 @@ const History = () => {
     sessionStorage.removeItem('historyPassword');
     
     // Check if encryption flags are set (indicates password was set before)
+    // These flags are the PRIMARY indicator that password protection is enabled
     const hasEncryptFlag = localStorage.getItem('historyEncrypted') === 'true';
     const hasDecryptFlag = localStorage.getItem('decryptionHistoryEncrypted') === 'true';
     
@@ -80,8 +81,9 @@ const History = () => {
     const hasEncryptedData = (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) ||
                             (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('['));
     
-    // Consider encrypted if flags are set (even if no data yet - password was set)
-    // OR if there's actual encrypted data (flags might be missing but data is encrypted)
+    // Consider encrypted if flags are set (PRIMARY check - flags indicate password was set)
+    // OR if there's actual encrypted data (secondary check - data is encrypted)
+    // Flags take precedence - if flags are set, password protection is enabled regardless of data format
     const encrypted = (hasEncryptFlag || hasDecryptFlag) || hasEncryptedData;
     
     // If flags are set but no encrypted data, keep the flags (password was set, just no history yet)
@@ -90,11 +92,11 @@ const History = () => {
     setIsEncrypted(encrypted);
     
     if (encrypted) {
-      // Password was set before - require password entry
+      // Password was set before (flags are set OR encrypted data exists) - require password entry
       setShowPasswordModal(true);
       setShowPasswordSetupModal(false);
     } else {
-      // No password set yet - force password setup (first time)
+      // No password set yet (no flags and no encrypted data) - force password setup (first time)
       setShowPasswordSetupModal(true);
       setShowPasswordModal(false);
     }
