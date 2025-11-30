@@ -253,17 +253,41 @@ const Encrypt = () => {
     const startTime = performance.now();
 
     try {
-      // Convert file to base64 for Netlify Functions
-      const fileBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          // Remove data URL prefix (e.g., "data:application/octet-stream;base64,")
-          const base64 = reader.result.split(',')[1] || reader.result;
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedFile);
-      });
+      const isTextFile = selectedFile.name.toLowerCase().endsWith('.txt');
+      let fileBase64;
+      let fileContent;
+
+      if (isTextFile) {
+        // Read text file as UTF-8 text
+        fileContent = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsText(selectedFile, 'UTF-8');
+        });
+        
+        // Convert text to hex for encryption
+        const textBytes = new TextEncoder().encode(fileContent);
+        const hexString = Array.from(textBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toUpperCase();
+        
+        // Convert hex to base64 for API
+        const hexBytes = Buffer.from(hexString, 'hex');
+        fileBase64 = hexBytes.toString('base64');
+      } else {
+        // Convert binary file to base64
+        fileBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1] || reader.result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+      }
 
       const response = await axios.post('/api/encrypt-file', {
         fileData: fileBase64,
@@ -303,11 +327,15 @@ const Encrypt = () => {
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      const blob = new Blob([bytes], { type: 'application/octet-stream' });
+      
+      // Use appropriate MIME type and extension
+      const mimeType = isTextFile ? 'text/plain' : 'application/octet-stream';
+      const extension = isTextFile ? '.txt.aes' : '.aes';
+      const blob = new Blob([bytes], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${selectedFile.name}.aes`;
+      a.download = `${selectedFile.name}${extension}`;
       a.click();
       URL.revokeObjectURL(url);
 
