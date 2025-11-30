@@ -422,11 +422,51 @@ const Decrypt = () => {
     const startTime = performance.now();
     
     try {
-      const response = await axios.post('/api/decrypt', {
-        ciphertext: processedCiphertext,
-        key: cleanKey,
-        key_size: keySize
-      });
+      let response;
+      
+      // Use advanced decryption API for advanced modes
+      if (['CTR', 'CFB', 'OFB', 'XTS', 'GCM'].includes(mode)) {
+        const payload = {
+          ciphertext: processedCiphertext,
+          key: cleanKey,
+          key_size: keySize,
+          mode: mode
+        };
+        
+        if (mode === 'CTR' && nonce) {
+          payload.nonce = nonce;
+        } else if ((mode === 'CBC' || mode === 'CFB' || mode === 'OFB' || mode === 'GCM' || mode === 'XTS') && iv) {
+          payload.iv = mode === 'XTS' ? iv : iv;
+        }
+        
+        response = await axios.post('/api/decrypt-advanced', payload);
+        
+        // Create a simplified result structure
+        const advancedResult = {
+          final_plaintext: response.data.plaintext,
+          plaintext: response.data.plaintext,
+          mode: mode,
+          tag: response.data.tag,
+          // Add empty visualization data to prevent errors
+          rounds: [],
+          initial_state: null,
+          expanded_key: []
+        };
+        response.data = advancedResult;
+      } else {
+        // Use standard decryption API for CBC/ECB
+        const payload = {
+          ciphertext: processedCiphertext,
+          key: cleanKey,
+          key_size: keySize
+        };
+        
+        if (mode === 'CBC' && iv) {
+          payload.iv = iv;
+        }
+        
+        response = await axios.post('/api/decrypt', payload);
+      }
       
       const endTime = performance.now();
       const speed = ((processedCiphertext.length / 2 / 1024) / ((endTime - startTime) / 1000)).toFixed(2);
