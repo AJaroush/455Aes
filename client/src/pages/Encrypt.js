@@ -275,22 +275,16 @@ const Encrypt = () => {
           reader.readAsText(selectedFile, 'UTF-8');
         });
         
-        // Convert text to hex for encryption
+        // Convert text to bytes, then to base64
         const textBytes = new TextEncoder().encode(fileContent);
-        const messageHex = Array.from(textBytes)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')
-          .toUpperCase();
-        
-        // Use encrypt-file endpoint for CBC mode (more reliable)
-        // Convert hex to bytes, then to base64
-        const hexBytes = messageHex.match(/.{1,2}/g) || [];
-        const bytes = new Uint8Array(hexBytes.map(byte => parseInt(byte, 16)));
-        const binaryString = String.fromCharCode(...bytes);
+        const binaryString = String.fromCharCode(...textBytes);
         const fileBase64 = btoa(binaryString);
         
-        // Generate IV if not provided
-        if (!finalIV) {
+        // Use the selected encryption mode (ECB or CBC)
+        const fileMode = encryptionMode === 'ECB' ? 'ECB' : 'CBC';
+        
+        // Generate IV if CBC mode and not provided
+        if (fileMode === 'CBC' && !finalIV) {
           const ivResponse = await axios.post('/api/generate-key', 
             { key_size: keySize },
             {
@@ -307,7 +301,7 @@ const Encrypt = () => {
           filename: 'temp.txt',
           key: finalKey,
           key_size: keySize,
-          mode: 'CBC',
+          mode: fileMode,
           iv: finalIV
         });
         
@@ -318,8 +312,14 @@ const Encrypt = () => {
           .join('')
           .toUpperCase();
         
+        // Include IV in the file if CBC mode (first line: IV, second line: ciphertext)
+        let fileContentToSave = ciphertextHex;
+        if (fileMode === 'CBC' && response.data.iv) {
+          fileContentToSave = `IV:${response.data.iv}\n${ciphertextHex}`;
+        }
+        
         // Download as text file with hex ciphertext
-        const blob = new Blob([ciphertextHex], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob([fileContentToSave], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -338,12 +338,28 @@ const Encrypt = () => {
           reader.readAsDataURL(selectedFile);
         });
 
+        // Use the selected encryption mode (ECB or CBC)
+        const fileMode = encryptionMode === 'ECB' ? 'ECB' : 'CBC';
+        
+        // Generate IV if CBC mode and not provided
+        if (fileMode === 'CBC' && !finalIV) {
+          const ivResponse = await axios.post('/api/generate-key', 
+            { key_size: keySize },
+            {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          finalIV = ivResponse.data.iv;
+        }
+        
         response = await axios.post('/api/encrypt-file', {
           fileData: fileBase64,
           filename: selectedFile.name,
           key: finalKey,
           key_size: keySize,
-          mode: 'CBC',
+          mode: fileMode,
           iv: finalIV
         });
 
@@ -366,6 +382,7 @@ const Encrypt = () => {
       const speed = ((selectedFile.size / 1024) / ((endTime - startTime) / 1000)).toFixed(2);
 
       // Add to history
+      const fileMode = isTextFile ? (encryptionMode === 'ECB' ? 'ECB' : 'CBC') : (encryptionMode === 'ECB' ? 'ECB' : 'CBC');
       const historyEntry = {
         id: Date.now(),
         type: 'file',
@@ -373,8 +390,9 @@ const Encrypt = () => {
         keySize,
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
-        mode: isTextFile ? 'CBC' : response.data.mode,
-        fileSize: selectedFile.size
+        mode: fileMode,
+        fileSize: selectedFile.size,
+        iv: isTextFile && fileMode === 'CBC' ? (response.data.iv || finalIV) : undefined
       };
       setEncryptionHistory([historyEntry, ...encryptionHistory.slice(0, 9)]);
       

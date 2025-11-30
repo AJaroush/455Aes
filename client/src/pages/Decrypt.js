@@ -212,31 +212,52 @@ const Decrypt = () => {
       let plaintextHex;
 
       if (isTextFile) {
-        // Read text file as text (should contain hex ciphertext)
-        const ciphertextHex = await new Promise((resolve, reject) => {
+        // Read text file as text (should contain hex ciphertext, optionally with IV on first line)
+        const fileContent = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => {
-            // Remove whitespace and newlines from hex string
-            const hex = reader.result.replace(/\s+/g, '').toUpperCase();
-            resolve(hex);
-          };
+          reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
           reader.readAsText(selectedFile, 'UTF-8');
         });
-
-        // Use text decryption API
-        response = await axios.post('/api/decrypt', {
-          ciphertext: ciphertextHex,
-          key: finalKey,
-          key_size: keySize
-        });
-
-        plaintextHex = response.data.final_plaintext || response.data.plaintext;
         
-        // Convert hex to text
-        const hexBytes = plaintextHex.match(/.{1,2}/g) || [];
+        // Parse IV if present (format: "IV:XXXXXXXX\nCIPHERTEXT" or just "CIPHERTEXT")
+        let ciphertextHex = fileContent.trim();
+        let extractedIV = finalIV;
+        
+        if (ciphertextHex.startsWith('IV:')) {
+          const lines = ciphertextHex.split('\n');
+          if (lines[0].startsWith('IV:')) {
+            extractedIV = lines[0].substring(3).trim();
+            ciphertextHex = lines.slice(1).join('\n').trim();
+          }
+        }
+        
+        // Remove all whitespace from hex string
+        ciphertextHex = ciphertextHex.replace(/\s+/g, '').toUpperCase();
+        
+        // Convert hex ciphertext to base64 for decrypt-file endpoint
+        const hexBytes = ciphertextHex.match(/.{1,2}/g) || [];
         const bytes = new Uint8Array(hexBytes.map(byte => parseInt(byte, 16)));
-        const plaintext = new TextDecoder('utf-8').decode(bytes);
+        const binaryString = String.fromCharCode(...bytes);
+        const fileBase64 = btoa(binaryString);
+        
+        // Use decrypt-file endpoint (supports both ECB and CBC with IV)
+        response = await axios.post('/api/decrypt-file', {
+          fileData: fileBase64,
+          filename: selectedFile.name,
+          key: finalKey,
+          key_size: keySize,
+          mode: mode,
+          iv: extractedIV || finalIV
+        });
+        
+        // Convert decrypted base64 back to text
+        const binaryString2 = atob(response.data.decryptedData);
+        const decryptedBytes = new Uint8Array(binaryString2.length);
+        for (let i = 0; i < binaryString2.length; i++) {
+          decryptedBytes[i] = binaryString2.charCodeAt(i);
+        }
+        const plaintext = new TextDecoder('utf-8').decode(decryptedBytes);
         
         // Download as text file with plaintext
         const blob = new Blob([plaintext], { type: 'text/plain;charset=utf-8' });
