@@ -13,7 +13,8 @@ import {
   Copy,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  CheckCircle
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';
@@ -32,6 +33,34 @@ const History = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEncrypted, setIsEncrypted] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(null);
+
+  // Password validation function
+  const validatePassword = (pwd) => {
+    const requirements = {
+      length: pwd.length >= 12,
+      uppercase: /[A-Z]/.test(pwd),
+      lowercase: /[a-z]/.test(pwd),
+      number: /[0-9]/.test(pwd),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
+    };
+
+    const strength = {
+      score: Object.values(requirements).filter(Boolean).length,
+      requirements
+    };
+
+    return strength;
+  };
+
+  // Update password strength when newPassword changes
+  useEffect(() => {
+    if (newPassword) {
+      setPasswordStrength(validatePassword(newPassword));
+    } else {
+      setPasswordStrength(null);
+    }
+  }, [newPassword]);
 
   useEffect(() => {
     checkEncryptionStatus();
@@ -119,8 +148,17 @@ const History = () => {
       toast.error('Passwords do not match');
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+
+    // Validate password strength
+    const strength = validatePassword(newPassword);
+    if (strength.score < 5) {
+      const missing = [];
+      if (!strength.requirements.length) missing.push('at least 12 characters');
+      if (!strength.requirements.uppercase) missing.push('one uppercase letter');
+      if (!strength.requirements.lowercase) missing.push('one lowercase letter');
+      if (!strength.requirements.number) missing.push('one number');
+      if (!strength.requirements.special) missing.push('one special character');
+      toast.error(`Password must contain: ${missing.join(', ')}`);
       return;
     }
 
@@ -570,7 +608,7 @@ const History = () => {
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder={isEncrypted ? 'Enter new password' : 'Enter password (min 6 characters)'}
+                    placeholder={isEncrypted ? 'Enter new password' : 'Enter strong password'}
                     className="input-clean w-full pr-10"
                     autoFocus={!isEncrypted}
                     disabled={isLoading}
@@ -583,6 +621,65 @@ const History = () => {
                     {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                
+                {/* Password Strength Indicator */}
+                {newPassword && passwordStrength && (
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${
+                            passwordStrength.score === 5
+                              ? 'bg-green-500'
+                              : passwordStrength.score >= 3
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                          }`}
+                          style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                        />
+                      </div>
+                      <span
+                        className={`text-xs font-medium ${
+                          passwordStrength.score === 5
+                            ? 'text-green-600 dark:text-green-400'
+                            : passwordStrength.score >= 3
+                            ? 'text-yellow-600 dark:text-yellow-400'
+                            : 'text-red-600 dark:text-red-400'
+                        }`}
+                      >
+                        {passwordStrength.score === 5
+                          ? 'Strong'
+                          : passwordStrength.score >= 3
+                          ? 'Medium'
+                          : 'Weak'}
+                      </span>
+                    </div>
+                    
+                    {/* Requirements Checklist */}
+                    <div className="text-xs space-y-1">
+                      <div className={`flex items-center space-x-2 ${passwordStrength.requirements.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <CheckCircle className={`h-3 w-3 ${passwordStrength.requirements.length ? '' : 'opacity-30'}`} />
+                        <span>At least 12 characters</span>
+                      </div>
+                      <div className={`flex items-center space-x-2 ${passwordStrength.requirements.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <CheckCircle className={`h-3 w-3 ${passwordStrength.requirements.uppercase ? '' : 'opacity-30'}`} />
+                        <span>One uppercase letter (A-Z)</span>
+                      </div>
+                      <div className={`flex items-center space-x-2 ${passwordStrength.requirements.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <CheckCircle className={`h-3 w-3 ${passwordStrength.requirements.lowercase ? '' : 'opacity-30'}`} />
+                        <span>One lowercase letter (a-z)</span>
+                      </div>
+                      <div className={`flex items-center space-x-2 ${passwordStrength.requirements.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <CheckCircle className={`h-3 w-3 ${passwordStrength.requirements.number ? '' : 'opacity-30'}`} />
+                        <span>One number (0-9)</span>
+                      </div>
+                      <div className={`flex items-center space-x-2 ${passwordStrength.requirements.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        <CheckCircle className={`h-3 w-3 ${passwordStrength.requirements.special ? '' : 'opacity-30'}`} />
+                        <span>One special character (!@#$%^&*...)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mb-6">
@@ -600,7 +697,7 @@ const History = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
                   {isEncrypted 
                     ? 'Your history will be re-encrypted with the new password.'
-                    : 'Your history will be encrypted. Remember this password to access it later.'}
+                    : 'Your history will be encrypted. Remember this password to access it later. Password must meet all requirements above.'}
                 </p>
               </div>
               
@@ -609,7 +706,7 @@ const History = () => {
                   type="submit"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={isLoading || !newPassword || !confirmPassword || (isEncrypted && !password)}
+                  disabled={isLoading || !newPassword || !confirmPassword || (isEncrypted && !password) || (passwordStrength && passwordStrength.score < 5)}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? 'Processing...' : (isEncrypted ? 'Change Password' : 'Set Password')}
