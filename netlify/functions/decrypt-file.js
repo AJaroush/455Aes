@@ -100,13 +100,42 @@ exports.handler = async (event, context) => {
       decryptedBuffer = aes.decryptCBC(Array.from(encryptedBuffer), cleanKey, cleanIV);
     } else {
       // ECB mode
+      // Ensure encrypted buffer is a multiple of 16 bytes
+      if (encryptedBuffer.length % 16 !== 0) {
+        return {
+          statusCode: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ error: 'Encrypted file size must be a multiple of 16 bytes for ECB mode' })
+        };
+      }
+      
       const decrypted = [];
       for (let i = 0; i < encryptedBuffer.length; i += 16) {
         const block = Array.from(encryptedBuffer.slice(i, i + 16));
+        // Ensure block is exactly 16 bytes
+        if (block.length < 16) {
+          // Pad incomplete block (shouldn't happen if encrypted correctly)
+          while (block.length < 16) {
+            block.push(0);
+          }
+        }
         const decryptedBlock = aes.decryptBlock(block, cleanKey);
         decrypted.push(...decryptedBlock);
       }
-      const unpadded = aes.pkcs7Unpad(decrypted);
+      
+      // Try to remove padding, but handle errors gracefully
+      let unpadded;
+      try {
+        unpadded = aes.pkcs7Unpad(decrypted);
+      } catch (paddingError) {
+        // If padding is invalid, return the decrypted data as-is
+        // This might happen if the file wasn't encrypted with PKCS7 padding
+        console.warn('Padding validation failed, returning decrypted data without unpadding:', paddingError.message);
+        unpadded = decrypted;
+      }
       decryptedBuffer = Buffer.from(unpadded);
     }
     
