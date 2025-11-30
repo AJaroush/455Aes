@@ -22,8 +22,7 @@ import {
   RefreshCw,
   Save,
   History,
-  X,
-  ArrowRight
+  X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
