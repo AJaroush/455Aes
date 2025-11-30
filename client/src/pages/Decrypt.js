@@ -1023,7 +1023,7 @@ const Decrypt = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={generateRandomIV}
                     className="w-full mb-3 p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center justify-center"
-                  >
+                    >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Generate Random IV
                     </motion.button>

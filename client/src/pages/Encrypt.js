@@ -370,18 +370,18 @@ const Encrypt = () => {
         });
 
         // Download encrypted binary file
-        const binaryString = atob(response.data.encryptedData);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        const blob = new Blob([bytes], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${selectedFile.name}.aes`;
-        a.click();
-        URL.revokeObjectURL(url);
+      const binaryString = atob(response.data.encryptedData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedFile.name}.aes`;
+      a.click();
+      URL.revokeObjectURL(url);
       }
 
       const endTime = performance.now();
@@ -516,10 +516,10 @@ const Encrypt = () => {
       } else {
         // Use standard encryption API for CBC/ECB
         response = await axios.post('/api/encrypt', {
-          message: cleanMessage,
-          key: cleanKey,
-          key_size: keySize
-        });
+        message: cleanMessage,
+        key: cleanKey,
+        key_size: keySize
+      });
         
         // Calculate HMAC if requested
         if (useHMAC) {
@@ -858,14 +858,14 @@ const Encrypt = () => {
                 <div className="mb-6">
                   <label className="block text-gray-900 dark:text-white font-medium mb-3 flex items-center">
                     {encryptionMode === 'XTS' ? 'Tweak (for XTS mode)' : 'IV (Initialization Vector)'}
-                    <div className="group relative ml-2">
-                      <Info className="h-4 w-4 text-gray-500 dark:text-gray-400 cursor-help" />
-                      <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-800 dark:bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 border border-gray-700 shadow-lg">
+                  <div className="group relative ml-2">
+                    <Info className="h-4 w-4 text-gray-500 dark:text-gray-400 cursor-help" />
+                    <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-800 dark:bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 border border-gray-700 shadow-lg">
                         {encryptionMode === 'XTS' 
                           ? 'XTS mode uses a tweak value (similar to IV) for disk encryption. Enter 32 hex characters (16 bytes).'
                           : 'Enter any length hex characters (will be padded automatically)'}
-                      </div>
                     </div>
+                  </div>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -874,7 +874,7 @@ const Encrypt = () => {
                     >
                       Generate
                     </motion.button>
-                  </label>
+                </label>
                   <input
                     type="text"
                     value={iv}
@@ -972,28 +972,28 @@ const Encrypt = () => {
                     <div className="relative">
                       {showMessage ? (
                         <textarea
-                          type="text"
-                          value={cleanedMessage}
-                          onChange={(e) => {
-                            const cleaned = cleanHex(e.target.value);
-                            setMessage(cleaned);
-                          }}
-                          onKeyDown={(e) => {
+                    type="text"
+                    value={cleanedMessage}
+                    onChange={(e) => {
+                      const cleaned = cleanHex(e.target.value);
+                        setMessage(cleaned);
+                    }}
+                    onKeyDown={(e) => {
                             if (e.key === 'Enter' && e.ctrlKey && !loading && cleanedMessage.length > 0 && cleanedKey.length === parseInt(keySize)/4) {
-                              handleEncrypt();
-                            }
-                          }}
+                        handleEncrypt();
+                      }
+                    }}
                           placeholder="Enter your message in hexadecimal format (e.g., 54776F204F6E65204E696E652054776F) or use the button above to generate one"
                           className={`input-clean w-full p-4 rounded-lg font-mono transition-all min-h-[100px] ${
                             cleanedMessage.length > 0 
-                              ? 'border-green-500/50 bg-green-500/5' 
-                              : ''
-                          }`}
-                          inputMode="latin"
-                          autoComplete="off"
-                          spellCheck={false}
+                        ? 'border-green-500/50 bg-green-500/5' 
+                        : ''
+                    }`}
+                    inputMode="latin"
+                    autoComplete="off"
+                    spellCheck={false}
                           rows={4}
-                        />
+                  />
                       ) : (
                         <div className={`input-clean w-full p-4 rounded-lg font-mono transition-all min-h-[100px] flex items-start ${
                           cleanedMessage.length > 0 
@@ -1002,7 +1002,7 @@ const Encrypt = () => {
                         }`}>
                           <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all">
                             {cleanedMessage.length > 0 ? '•'.repeat(cleanedMessage.length) : 'Enter your message in hexadecimal format...'}
-                          </div>
+                  </div>
                         </div>
                       )}
                       <motion.button
@@ -1021,10 +1021,10 @@ const Encrypt = () => {
                       </div>
                       {cleanedMessage.length > 0 && (
                         <div className="absolute bottom-2 right-2 z-20">
-                          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        </div>
-                      )}
+                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
+                  )}
+                </div>
                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                       💡 Tip: Enter any hexadecimal characters (0-9, A-F). The message will be padded automatically if needed.
                     </p>
@@ -1160,15 +1160,15 @@ const Encrypt = () => {
                       </div>
                     </div>
                   </label>
-                  <motion.button
+                    <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={generateRandomKey}
+                      onClick={generateRandomKey}
                     className="w-full mb-3 p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all flex items-center justify-center"
-                  >
+                    >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Generate Random Key
-                  </motion.button>
+                    </motion.button>
                 <div className="relative">
                   <input
                     type={showKey ? 'text' : 'password'}
@@ -1180,11 +1180,11 @@ const Encrypt = () => {
                           setKey(cleaned);
                         }
                       }}
-                    onKeyDown={(e) => {
+                      onKeyDown={(e) => {
                       if (e.key === 'Enter' && e.ctrlKey && !loading && cleanedMessage.length > 0 && cleanedKey.length === parseInt(keySize)/4) {
-                        handleEncrypt();
-                      }
-                    }}
+                          handleEncrypt();
+                        }
+                      }}
                     placeholder={`Enter ${parseInt(keySize)/4} hex characters`}
                       className={`input-clean w-full p-4 rounded-lg font-mono transition-all ${
                         cleanedKey.length === parseInt(keySize)/4 
@@ -1573,12 +1573,12 @@ const Encrypt = () => {
                 <div className="min-h-[400px]">
                   {activeTab === 'rounds' && (
                     results.rounds && results.rounds.length > 0 ? (
-                      <RoundVisualization 
-                        rounds={results.rounds}
+                    <RoundVisualization 
+                      rounds={results.rounds}
                         autoPlay={false}
-                        currentRound={currentRound}
-                        setCurrentRound={setCurrentRound}
-                      />
+                      currentRound={currentRound}
+                      setCurrentRound={setCurrentRound}
+                    />
                     ) : (
                       <div className="p-8 text-center">
                         <AlertCircle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
@@ -1596,7 +1596,7 @@ const Encrypt = () => {
 
                   {activeTab === 'keys' && (
                     results.expanded_key && results.expanded_key.length > 0 ? (
-                      <KeyExpansion keys={results.expanded_key} />
+                    <KeyExpansion keys={results.expanded_key} />
                     ) : (
                       <div className="p-8 text-center">
                         <AlertCircle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
@@ -1614,10 +1614,10 @@ const Encrypt = () => {
 
                   {activeTab === 'matrix' && (
                     results.initial_state && results.rounds && results.rounds.length > 0 ? (
-                      <MatrixVisualization 
-                        initialState={results.initial_state}
-                        rounds={results.rounds}
-                        currentRound={currentRound}
+                    <MatrixVisualization 
+                      initialState={results.initial_state}
+                      rounds={results.rounds}
+                      currentRound={currentRound}
                         setCurrentRound={setCurrentRound}
                       />
                     ) : (
@@ -1666,7 +1666,7 @@ const Encrypt = () => {
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                           {inputMode === 'text' ? 'Enter Your Message' : 'Upload Your File'}
-                        </h3>
+                </h3>
                         {inputMode === 'text' ? (
                           <>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -1683,8 +1683,8 @@ const Encrypt = () => {
                                   <div className="flex items-center text-yellow-600 dark:text-yellow-400">
                                     <AlertCircle className="h-4 w-4 mr-2" />
                                     {cleanedMessage.length} hex chars (odd length - will auto-pad with leading zero when encrypting)
-                                  </div>
-                                )}
+              </div>
+            )}
                               </div>
                             ) : (
                               <div className="text-gray-500 dark:text-gray-500 text-sm">
@@ -1711,7 +1711,7 @@ const Encrypt = () => {
                         )}
                       </div>
                     </div>
-                  </motion.div>
+          </motion.div>
 
                   {/* Step 2 */}
                   <motion.div
@@ -1731,7 +1731,7 @@ const Encrypt = () => {
                           : 'bg-gray-500 text-white'
                       }`}>
                         {cleanedKey.length === parseInt(keySize)/4 ? <CheckCircle className="h-5 w-5" /> : '2'}
-                      </div>
+        </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                           Enter Your Key

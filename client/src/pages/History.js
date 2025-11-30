@@ -243,12 +243,12 @@ const History = () => {
       }
       
       // Combine and sort history (even if some decryption failed, show what we have)
-      const combined = [
+    const combined = [
         ...(Array.isArray(encryptHistoryList) ? encryptHistoryList : []).map(item => ({ ...item, type: 'encrypt' })),
         ...(Array.isArray(decryptHistoryList) ? decryptHistoryList : []).map(item => ({ ...item, type: 'decrypt' }))
-      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      
-      setHistory(combined);
+    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    setHistory(combined);
     } catch (error) {
       console.error('Error loading history:', error);
       toast.error('Failed to load history');
@@ -500,9 +500,9 @@ const History = () => {
       toast.error('Please enter password to delete items');
       setShowPasswordModal(true);
     } else {
-      localStorage.setItem(key, JSON.stringify(filtered));
-      loadHistory();
-      toast.success('Item deleted!');
+    localStorage.setItem(key, JSON.stringify(filtered));
+    loadHistory();
+    toast.success('Item deleted!');
     }
   };
 

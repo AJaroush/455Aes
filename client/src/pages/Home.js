@@ -295,24 +295,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-4 bg-gray-50 dark:bg-white/5">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Features</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              Everything you need to understand and work with AES encryption
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
       {/* How it Works */}
       <section className="py-20 px-4 bg-gray-50 dark:bg-white/5">
         <div className="max-w-6xl mx-auto">
