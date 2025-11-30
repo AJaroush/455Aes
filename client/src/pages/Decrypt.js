@@ -223,17 +223,31 @@ const Decrypt = () => {
         // Parse IV if present (format: "IV:XXXXXXXX\nCIPHERTEXT" or just "CIPHERTEXT")
         let ciphertextHex = fileContent.trim();
         let extractedIV = finalIV;
+        let detectedMode = mode; // Default to selected mode
         
+        // Check if file contains IV (indicates CBC mode)
         if (ciphertextHex.startsWith('IV:')) {
           const lines = ciphertextHex.split('\n');
           if (lines[0].startsWith('IV:')) {
-            extractedIV = lines[0].substring(3).trim();
+            extractedIV = lines[0].substring(3).trim().replace(/\s+/g, '').toUpperCase();
             ciphertextHex = lines.slice(1).join('\n').trim();
+            detectedMode = 'CBC'; // If IV is present, it's CBC mode
           }
+        } else {
+          // No IV means it could be ECB or CBC without IV saved
+          // Use the selected mode from UI
+          detectedMode = mode;
         }
         
         // Remove all whitespace from hex string
         ciphertextHex = ciphertextHex.replace(/\s+/g, '').toUpperCase();
+        
+        // Validate hex string
+        if (!/^[0-9A-F]+$/.test(ciphertextHex)) {
+          toast.error('Invalid hex ciphertext in file');
+          setLoading(false);
+          return;
+        }
         
         // Convert hex ciphertext to base64 for decrypt-file endpoint
         const hexBytes = ciphertextHex.match(/.{1,2}/g) || [];
@@ -247,8 +261,8 @@ const Decrypt = () => {
           filename: selectedFile.name,
           key: finalKey,
           key_size: keySize,
-          mode: mode,
-          iv: extractedIV || finalIV
+          mode: detectedMode,
+          iv: detectedMode === 'CBC' ? (extractedIV || finalIV) : undefined
         });
         
         // Convert decrypted base64 back to text
