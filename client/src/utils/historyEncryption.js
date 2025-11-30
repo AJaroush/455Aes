@@ -143,15 +143,49 @@ export async function saveHistory(key, data, password = null) {
       return safeItem;
     });
     
+    // Check if history is already encrypted
+    const existingData = localStorage.getItem(key);
+    const isAlreadyEncrypted = existingData && existingData !== '[]' && !existingData.startsWith('[');
+    
+    // Check encryption flags
+    const encryptFlag = key === 'encryptionHistory' 
+      ? localStorage.getItem('historyEncrypted') === 'true'
+      : localStorage.getItem('decryptionHistoryEncrypted') === 'true';
+    
+    const wasEncrypted = isAlreadyEncrypted || encryptFlag;
+    
     if (password) {
       // Encrypt before saving
       const encrypted = await encryptHistory(sanitizedData, password);
       localStorage.setItem(key, encrypted);
-      setHistoryEncryptionStatus(true);
+      // Set encryption status flag for this specific history type
+      if (key === 'encryptionHistory') {
+        localStorage.setItem('historyEncrypted', 'true');
+      } else if (key === 'decryptionHistory') {
+        localStorage.setItem('decryptionHistoryEncrypted', 'true');
+      }
+    } else if (wasEncrypted) {
+      // History was encrypted but no password provided - try to get password from sessionStorage
+      const sessionPassword = sessionStorage.getItem('historyPassword');
+      if (sessionPassword) {
+        // Use session password to preserve encryption
+        const encrypted = await encryptHistory(sanitizedData, sessionPassword);
+        localStorage.setItem(key, encrypted);
+        // Keep encryption flags
+        if (key === 'encryptionHistory') {
+          localStorage.setItem('historyEncrypted', 'true');
+        } else if (key === 'decryptionHistory') {
+          localStorage.setItem('decryptionHistoryEncrypted', 'true');
+        }
+      } else {
+        // No password available - preserve existing encrypted data, don't overwrite
+        console.warn(`Cannot save ${key}: history is encrypted but no password available. Preserving existing encrypted data.`);
+        return; // Don't save if encrypted but no password
+      }
     } else {
-      // Save as plain JSON
+      // Save as plain JSON (only if it wasn't encrypted before)
       localStorage.setItem(key, JSON.stringify(sanitizedData));
-      setHistoryEncryptionStatus(false);
+      // Don't change encryption status flags if they weren't set
     }
   } catch (error) {
     console.error('Error saving history:', error);
