@@ -551,10 +551,11 @@ const Encrypt = () => {
       };
       setEncryptionHistory([historyEntry, ...encryptionHistory.slice(0, 9)]);
       
-      // Save to localStorage
-      const stored = JSON.parse(localStorage.getItem('encryptionHistory') || '[]');
+      // Save to localStorage with optional encryption
+      const stored = loadHistorySafely('encryptionHistory');
       stored.unshift(historyEntry);
-      localStorage.setItem('encryptionHistory', JSON.stringify(stored.slice(0, 100))); // Keep last 100
+      const password = getHistoryPassword();
+      await saveHistory('encryptionHistory', stored.slice(0, 100), password);
       
       setResults(response.data);
       setCurrentRound(0);
