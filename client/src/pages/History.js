@@ -594,28 +594,30 @@ const History = () => {
               </div>
               
               <div className="flex gap-3">
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={isLoading || !password}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Decrypting...' : 'Unlock History'}
-                </motion.button>
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    // Don't allow skipping - force password entry
-                    toast.error('Password is required to view encrypted history');
-                  }}
-                  className="px-4 py-3 bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-white/20 transition-all opacity-50 cursor-not-allowed"
-                  disabled
-                >
-                  Password Required
-                </motion.button>
+                {isEncrypted ? (
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={isLoading || !password}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? 'Decrypting...' : 'Unlock History'}
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setShowPasswordSetupModal(true);
+                    }}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all"
+                  >
+                    Go to Setup
+                  </motion.button>
+                )}
               </div>
             </form>
           </motion.div>
