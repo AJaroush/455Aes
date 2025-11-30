@@ -432,7 +432,14 @@ class AESEnhanced {
     let previousBlock = ivBytes;
     
     for (let i = 0; i < padded.length; i += 16) {
-      const block = padded.slice(i, i + 16);
+      let block = padded.slice(i, i + 16);
+      // Ensure block is exactly 16 bytes
+      if (block.length < 16) {
+        // Pad incomplete block (shouldn't happen with proper padding, but handle it)
+        while (block.length < 16) {
+          block.push(0);
+        }
+      }
       const xored = this.xorBytes(block, previousBlock);
       const encrypted = this.encryptBlock(xored, keyHex);
       ciphertext.push(...encrypted);
