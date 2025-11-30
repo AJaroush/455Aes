@@ -178,12 +178,18 @@ export async function saveHistory(key, data, password = null) {
           localStorage.setItem('decryptionHistoryEncrypted', 'true');
         }
       } else {
-        // No password available - preserve existing encrypted data, don't overwrite
-        console.warn(`Cannot save ${key}: history is encrypted but no password available. Preserving existing encrypted data.`);
-        return; // Don't save if encrypted but no password
+        // No password available - save as plain JSON (user can encrypt later)
+        // This allows history to be saved even without password
+        localStorage.setItem(key, JSON.stringify(sanitizedData));
+        // Clear encryption flags since we're saving as plain
+        if (key === 'encryptionHistory') {
+          localStorage.removeItem('historyEncrypted');
+        } else if (key === 'decryptionHistory') {
+          localStorage.removeItem('decryptionHistoryEncrypted');
+        }
       }
     } else {
-      // Save as plain JSON (only if it wasn't encrypted before)
+      // Save as plain JSON (not encrypted)
       // Always save, even if empty array - this ensures history is persisted
       localStorage.setItem(key, JSON.stringify(sanitizedData));
       // Don't change encryption status flags if they weren't set

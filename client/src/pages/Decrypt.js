@@ -350,46 +350,30 @@ const Decrypt = () => {
       };
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
-      // Save to localStorage with optional encryption
-      // Check if history is encrypted before loading
+      // Save to localStorage - ALWAYS save, even without password
+      const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
       const existingData = localStorage.getItem('decryptionHistory');
       const isEncrypted = existingData && existingData !== '[]' && !existingData.startsWith('[');
-      const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
       
       let stored = [];
-      let decryptionSucceeded = false;
       
-      if (isEncrypted) {
-        if (password) {
-          // Try to decrypt existing history, add new entry, then re-encrypt
-          try {
-            stored = await decryptHistory(existingData, password);
-            decryptionSucceeded = true;
-          } catch (error) {
-            console.error('Failed to decrypt history for update:', error);
-            // Don't overwrite existing encrypted data if decryption fails
-            // The password might be wrong or not set - skip saving to preserve history
-            console.warn('Skipping history save: Could not decrypt existing history. Entry will not be saved to history.');
-            // Don't show error to user - just silently skip saving
-            return;
-          }
-        } else {
-          // Encrypted but no password - can't save, preserve existing data
-          console.warn('Skipping history save: encrypted but no password available');
-          // Don't show error to user - just silently skip saving
-          return;
+      // Load existing history
+      if (isEncrypted && password) {
+        // Try to decrypt existing encrypted history
+        try {
+          stored = await decryptHistory(existingData, password);
+        } catch (error) {
+          // If decryption fails, start with empty array (password might be wrong, but don't block saving)
+          stored = [];
         }
       } else {
         // Load plain history
         stored = loadHistorySafely('decryptionHistory');
-        decryptionSucceeded = true;
       }
       
-      // Only proceed if we successfully loaded/decrypted existing history
-      if (decryptionSucceeded) {
-        stored.unshift(historyEntry);
-        await saveHistory('decryptionHistory', stored.slice(0, 100), password);
-      }
+      // Add new entry and save
+      stored.unshift(historyEntry);
+      await saveHistory('decryptionHistory', stored.slice(0, 100), password);
 
       toast.success(`File decrypted successfully! (${speed} KB/s)`);
       setSelectedFile(null);
@@ -500,46 +484,30 @@ const Decrypt = () => {
       };
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
-      // Save to localStorage with optional encryption
-      // Check if history is encrypted before loading
+      // Save to localStorage - ALWAYS save, even without password
+      const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
       const existingData = localStorage.getItem('decryptionHistory');
       const isEncrypted = existingData && existingData !== '[]' && !existingData.startsWith('[');
-      const password = getHistoryPassword() || sessionStorage.getItem('historyPassword');
       
       let stored = [];
-      let decryptionSucceeded = false;
       
-      if (isEncrypted) {
-        if (password) {
-          // Try to decrypt existing history, add new entry, then re-encrypt
-          try {
-            stored = await decryptHistory(existingData, password);
-            decryptionSucceeded = true;
-          } catch (error) {
-            console.error('Failed to decrypt history for update:', error);
-            // Don't overwrite existing encrypted data if decryption fails
-            // The password might be wrong or not set - skip saving to preserve history
-            console.warn('Skipping history save: Could not decrypt existing history. Entry will not be saved to history.');
-            // Don't show error to user - just silently skip saving
-            return;
-          }
-        } else {
-          // Encrypted but no password - can't save, preserve existing data
-          console.warn('Skipping history save: encrypted but no password available');
-          // Don't show error to user - just silently skip saving
-          return;
+      // Load existing history
+      if (isEncrypted && password) {
+        // Try to decrypt existing encrypted history
+        try {
+          stored = await decryptHistory(existingData, password);
+        } catch (error) {
+          // If decryption fails, start with empty array (password might be wrong, but don't block saving)
+          stored = [];
         }
       } else {
         // Load plain history
         stored = loadHistorySafely('decryptionHistory');
-        decryptionSucceeded = true;
       }
       
-      // Only proceed if we successfully loaded/decrypted existing history
-      if (decryptionSucceeded) {
-        stored.unshift(historyEntry);
-        await saveHistory('decryptionHistory', stored.slice(0, 100), password);
-      }
+      // Add new entry and save
+      stored.unshift(historyEntry);
+      await saveHistory('decryptionHistory', stored.slice(0, 100), password);
       
       setResults(response.data);
       setCurrentRound(0);
