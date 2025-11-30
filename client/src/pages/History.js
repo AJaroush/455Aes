@@ -539,8 +539,8 @@ const History = () => {
 
   return (
     <div className="pt-16 min-h-screen bg-white dark:bg-black transition-colors duration-300">
-      {/* Password Modal */}
-      {showPasswordModal && (
+      {/* Password Entry Modal - Only show if encrypted */}
+      {showPasswordModal && isEncrypted && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -553,10 +553,12 @@ const History = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  History Protected
+                  {isEncrypted ? 'History Protected' : 'Password Required'}
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Enter password to view history
+                  {isEncrypted 
+                    ? 'Enter password to view history'
+                    : 'Please set a password to protect your history'}
                 </p>
               </div>
             </div>
