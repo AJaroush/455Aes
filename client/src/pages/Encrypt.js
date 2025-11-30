@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
   Zap, 
   Eye, 
@@ -21,7 +22,9 @@ import {
   Clock,
   RefreshCw,
   Save,
-  History
+  History,
+  X,
+  ArrowRight
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -29,7 +32,7 @@ import jsPDF from 'jspdf';
 import MatrixVisualization from '../components/MatrixVisualization';
 import RoundVisualization from '../components/RoundVisualization';
 import KeyExpansion from '../components/KeyExpansion';
-import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted, setHistoryEncryptionStatus, encryptHistory } from '../utils/historyEncryption';
+import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted } from '../utils/historyEncryption';
 
 const Encrypt = () => {
   const [message, setMessage] = useState('');
@@ -56,44 +59,15 @@ const Encrypt = () => {
   const [passwordStrength, setPasswordStrength] = useState(null);
   const [showAdvancedModes, setShowAdvancedModes] = useState(false);
   const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
-  const [showPasswordSetupModal, setShowPasswordSetupModal] = useState(false);
-  const [historyPassword, setHistoryPassword] = useState('');
-  const [confirmHistoryPassword, setConfirmHistoryPassword] = useState('');
-  const [showHistoryPassword, setShowHistoryPassword] = useState(false);
-  const [historyPasswordStrength, setHistoryPasswordStrength] = useState(null);
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
 
-  // Password validation function
-  const validatePassword = (pwd) => {
-    const requirements = {
-      length: pwd.length >= 12,
-      uppercase: /[A-Z]/.test(pwd),
-      lowercase: /[a-z]/.test(pwd),
-      number: /[0-9]/.test(pwd),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)
-    };
-
-    const strength = {
-      score: Object.values(requirements).filter(Boolean).length,
-      requirements
-    };
-
-    return strength;
-  };
-
-  // Update password strength when historyPassword changes
-  useEffect(() => {
-    if (historyPassword) {
-      setHistoryPasswordStrength(validatePassword(historyPassword));
-    } else {
-      setHistoryPasswordStrength(null);
-    }
-  }, [historyPassword]);
-
-  // Check if history password is set on mount
+  // Check if password is set and show prompt on first visit
   useEffect(() => {
     const hasPassword = isHistoryEncrypted();
-    if (!hasPassword) {
-      setShowPasswordSetupModal(true);
+    const hasSeenPrompt = localStorage.getItem('encryptPasswordPromptSeen') === 'true';
+    
+    if (!hasPassword && !hasSeenPrompt) {
+      setShowPasswordPrompt(true);
     }
   }, []);
 
@@ -272,94 +246,7 @@ const Encrypt = () => {
     }
   };
 
-  const handlePasswordSetup = async (e) => {
-    e.preventDefault();
-    if (!historyPassword || !confirmHistoryPassword) {
-      toast.error('Please enter and confirm password');
-      return;
-    }
-    if (historyPassword !== confirmHistoryPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    // Validate password strength
-    const strength = validatePassword(historyPassword);
-    if (strength.score < 5) {
-      const missing = [];
-      if (!strength.requirements.length) missing.push('at least 12 characters');
-      if (!strength.requirements.uppercase) missing.push('one uppercase letter');
-      if (!strength.requirements.lowercase) missing.push('one lowercase letter');
-      if (!strength.requirements.number) missing.push('one number');
-      if (!strength.requirements.special) missing.push('one special character');
-      toast.error(`Password must contain: ${missing.join(', ')}`);
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Get existing history (if any)
-      const encryptHistoryData = localStorage.getItem('encryptionHistory');
-      const decryptHistoryData = localStorage.getItem('decryptionHistory');
-      
-      let encryptHistoryList = [];
-      let decryptHistoryList = [];
-
-      // Handle existing history
-      if (encryptHistoryData && encryptHistoryData !== '[]') {
-        try {
-          if (encryptHistoryData.startsWith('[')) {
-            encryptHistoryList = JSON.parse(encryptHistoryData);
-          } else {
-            // Already encrypted - skip
-            encryptHistoryList = [];
-          }
-        } catch (error) {
-          encryptHistoryList = [];
-        }
-      }
-
-      if (decryptHistoryData && decryptHistoryData !== '[]') {
-        try {
-          if (decryptHistoryData.startsWith('[')) {
-            decryptHistoryList = JSON.parse(decryptHistoryData);
-          } else {
-            // Already encrypted - skip
-            decryptHistoryList = [];
-          }
-        } catch (error) {
-          decryptHistoryList = [];
-        }
-      }
-
-      // Encrypt with new password
-      await saveHistory('encryptionHistory', encryptHistoryList, historyPassword);
-      await saveHistory('decryptionHistory', decryptHistoryList, historyPassword);
-      
-      // Store password in sessionStorage for this session
-      sessionStorage.setItem('historyPassword', historyPassword);
-      
-      setShowPasswordSetupModal(false);
-      setHistoryPassword('');
-      setConfirmHistoryPassword('');
-      
-      toast.success('Password set! You can now encrypt/decrypt data.');
-    } catch (error) {
-      console.error('Password setup error:', error);
-      toast.error('Failed to set password: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const encryptFile = async () => {
-    // Check if history password is set
-    const hasPassword = isHistoryEncrypted();
-    if (!hasPassword) {
-      toast.error('Please set a history password first');
-      setShowPasswordSetupModal(true);
-      return;
-    }
     if (!selectedFile) {
       toast.error('Please select a file');
       return;
@@ -850,145 +737,6 @@ const Encrypt = () => {
 
   return (
     <div className="pt-16 min-h-screen bg-white dark:bg-black transition-colors duration-300">
-      {/* Password Setup Modal - Required before encryption */}
-      {showPasswordSetupModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass rounded-2xl p-8 border-clean max-w-md w-full"
-          >
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-3 bg-cyan-500/20 rounded-lg">
-                <Lock className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Set History Password
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Password is required to encrypt/decrypt data
-                </p>
-              </div>
-            </div>
-            
-            <form onSubmit={handlePasswordSetup}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showHistoryPassword ? 'text' : 'password'}
-                    value={historyPassword}
-                    onChange={(e) => setHistoryPassword(e.target.value)}
-                    placeholder="Enter password (min 12 characters)"
-                    className="input-clean w-full pr-10"
-                    autoFocus
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowHistoryPassword(!showHistoryPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showHistoryPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-                
-                {/* Password Strength Indicator */}
-                {historyPassword && historyPasswordStrength && (
-                  <div className="mt-2 space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            historyPasswordStrength.score === 5
-                              ? 'bg-green-500'
-                              : historyPasswordStrength.score >= 3
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500'
-                          }`}
-                          style={{ width: `${(historyPasswordStrength.score / 5) * 100}%` }}
-                        />
-                      </div>
-                      <span
-                        className={`text-xs font-medium ${
-                          historyPasswordStrength.score === 5
-                            ? 'text-green-600 dark:text-green-400'
-                            : historyPasswordStrength.score >= 3
-                            ? 'text-yellow-600 dark:text-yellow-400'
-                            : 'text-red-600 dark:text-red-400'
-                        }`}
-                      >
-                        {historyPasswordStrength.score === 5
-                          ? 'Strong'
-                          : historyPasswordStrength.score >= 3
-                          ? 'Medium'
-                          : 'Weak'}
-                      </span>
-                    </div>
-                    
-                    {/* Requirements Checklist */}
-                    <div className="text-xs space-y-1">
-                      <div className={`flex items-center space-x-2 ${historyPasswordStrength.requirements.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        <CheckCircle className={`h-3 w-3 ${historyPasswordStrength.requirements.length ? '' : 'opacity-30'}`} />
-                        <span>At least 12 characters</span>
-                      </div>
-                      <div className={`flex items-center space-x-2 ${historyPasswordStrength.requirements.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        <CheckCircle className={`h-3 w-3 ${historyPasswordStrength.requirements.uppercase ? '' : 'opacity-30'}`} />
-                        <span>One uppercase letter (A-Z)</span>
-                      </div>
-                      <div className={`flex items-center space-x-2 ${historyPasswordStrength.requirements.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        <CheckCircle className={`h-3 w-3 ${historyPasswordStrength.requirements.lowercase ? '' : 'opacity-30'}`} />
-                        <span>One lowercase letter (a-z)</span>
-                      </div>
-                      <div className={`flex items-center space-x-2 ${historyPasswordStrength.requirements.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        <CheckCircle className={`h-3 w-3 ${historyPasswordStrength.requirements.number ? '' : 'opacity-30'}`} />
-                        <span>One number (0-9)</span>
-                      </div>
-                      <div className={`flex items-center space-x-2 ${historyPasswordStrength.requirements.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        <CheckCircle className={`h-3 w-3 ${historyPasswordStrength.requirements.special ? '' : 'opacity-30'}`} />
-                        <span>One special character (!@#$%^&*...)</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmHistoryPassword}
-                  onChange={(e) => setConfirmHistoryPassword(e.target.value)}
-                  placeholder="Confirm password"
-                  className="input-clean w-full"
-                  disabled={loading}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                  Your encryption history will be protected with this password. Remember it to access your history later.
-                </p>
-              </div>
-              
-              <div className="flex gap-3">
-                <motion.button
-                  type="submit"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={loading || !historyPassword || !confirmHistoryPassword || (historyPasswordStrength && historyPasswordStrength.score < 5)}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Setting...' : 'Set Password'}
-                </motion.button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div
