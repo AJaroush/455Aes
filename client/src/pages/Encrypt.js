@@ -255,27 +255,21 @@ const Encrypt = () => {
     try {
       const isTextFile = selectedFile.name.toLowerCase().endsWith('.txt');
       let fileBase64;
-      let fileContent;
 
       if (isTextFile) {
         // Read text file as UTF-8 text
-        fileContent = await new Promise((resolve, reject) => {
+        const fileContent = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
           reader.readAsText(selectedFile, 'UTF-8');
         });
         
-        // Convert text to hex for encryption
+        // Convert text to UTF-8 bytes, then to base64
         const textBytes = new TextEncoder().encode(fileContent);
-        const hexString = Array.from(textBytes)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')
-          .toUpperCase();
-        
-        // Convert hex to base64 for API
-        const hexBytes = Buffer.from(hexString, 'hex');
-        fileBase64 = hexBytes.toString('base64');
+        // Convert Uint8Array to base64
+        const binaryString = String.fromCharCode(...textBytes);
+        fileBase64 = btoa(binaryString);
       } else {
         // Convert binary file to base64
         fileBase64 = await new Promise((resolve, reject) => {
