@@ -479,7 +479,8 @@ const Decrypt = () => {
         keySize,
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
-        plaintext: response.data.final_plaintext?.length > 16 ? response.data.final_plaintext.substring(0, 16) + '...' : response.data.final_plaintext
+        plaintext: response.data.final_plaintext?.length > 16 ? response.data.final_plaintext.substring(0, 16) + '...' : response.data.final_plaintext,
+        mode: mode
         // Removed: fullCiphertext, fullPlaintext (sensitive data)
       };
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
