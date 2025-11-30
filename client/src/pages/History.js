@@ -176,6 +176,26 @@ const History = () => {
     await loadHistory(password);
   };
 
+  const handleForgotPassword = () => {
+    if (window.confirm('Are you sure you want to reset your history? This will:\n\n- Clear all encrypted history\n- Remove password protection\n- Allow you to set a new password\n\nThis action cannot be undone!')) {
+      // Clear all encrypted history
+      localStorage.removeItem('encryptionHistory');
+      localStorage.removeItem('decryptionHistory');
+      localStorage.removeItem('historyEncrypted');
+      localStorage.removeItem('decryptionHistoryEncrypted');
+      sessionStorage.removeItem('historyPassword');
+      
+      // Reset state
+      setHistory([]);
+      setIsEncrypted(false);
+      setShowPasswordModal(false);
+      setShowPasswordSetupModal(true);
+      setPassword('');
+      
+      toast.success('History reset! Please set a new password.');
+    }
+  };
+
   const handlePasswordSetup = async (e) => {
     e.preventDefault();
     if (!newPassword || !confirmPassword) {
@@ -609,6 +629,15 @@ const History = () => {
                     ? 'Your history is encrypted. Enter the password you set when enabling history encryption.'
                     : 'Please set a password to protect your history. This is required for security.'}
                 </p>
+                {isEncrypted && (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="mt-2 text-xs text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 underline"
+                  >
+                    Forgot password? Reset history
+                  </button>
+                )}
               </div>
               
               <div className="flex gap-3">
