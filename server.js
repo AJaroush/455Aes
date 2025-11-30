@@ -193,7 +193,19 @@ app.post('/api/performance-test', async (req, res) => {
 // File encryption endpoint
 app.post('/api/encrypt-file', upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) {
+    // Support both file upload (multer) and JSON with base64 fileData
+    let fileBuffer;
+    let filename;
+    
+    if (req.file) {
+      // Traditional file upload via multer
+      fileBuffer = req.file.buffer;
+      filename = req.file.originalname;
+    } else if (req.body.fileData) {
+      // JSON request with base64 fileData (for text files and Netlify compatibility)
+      fileBuffer = Buffer.from(req.body.fileData, 'base64');
+      filename = req.body.filename || 'encrypted_file';
+    } else {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
@@ -213,7 +225,6 @@ app.post('/api/encrypt-file', upload.single('file'), async (req, res) => {
     }
 
     const aes = new AESEnhanced(parseInt(key_size));
-    const fileBuffer = req.file.buffer;
     
     // Calculate SHA-256 hash before encryption
     const hashBefore = crypto.createHash('sha256').update(fileBuffer).digest('hex').toUpperCase();
@@ -255,7 +266,7 @@ app.post('/api/encrypt-file', upload.single('file'), async (req, res) => {
     
     res.json({
       success: true,
-      filename: req.file.originalname,
+      filename: filename,
       originalSize: fileBuffer.length,
       encryptedSize: encryptedBuffer.length,
       encryptedData: encryptedBuffer.toString('base64'),
@@ -421,7 +432,19 @@ app.post('/api/decrypt', async (req, res) => {
 // File decryption endpoint
 app.post('/api/decrypt-file', upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) {
+    // Support both file upload (multer) and JSON with base64 fileData
+    let encryptedBuffer;
+    let filename;
+    
+    if (req.file) {
+      // Traditional file upload via multer
+      encryptedBuffer = req.file.buffer;
+      filename = req.file.originalname;
+    } else if (req.body.fileData) {
+      // JSON request with base64 fileData (for text files and Netlify compatibility)
+      encryptedBuffer = Buffer.from(req.body.fileData, 'base64');
+      filename = req.body.filename || 'decrypted_file';
+    } else {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
@@ -441,7 +464,6 @@ app.post('/api/decrypt-file', upload.single('file'), async (req, res) => {
     }
 
     const aes = new AESEnhanced(parseInt(key_size));
-    const encryptedBuffer = req.file.buffer;
     
     // Calculate SHA-256 hash before decryption
     const hashBefore = crypto.createHash('sha256').update(encryptedBuffer).digest('hex').toUpperCase();
@@ -496,7 +518,7 @@ app.post('/api/decrypt-file', upload.single('file'), async (req, res) => {
     
     res.json({
       success: true,
-      filename: req.file.originalname,
+      filename: filename,
       encryptedSize: encryptedBuffer.length,
       decryptedSize: decryptedBuffer.length,
       decryptedData: decryptedBuffer.toString('base64'),
