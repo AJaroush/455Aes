@@ -198,17 +198,25 @@ const Decrypt = () => {
     const startTime = performance.now();
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('key', finalKey);
-      formData.append('key_size', keySize);
-      formData.append('mode', mode);
-      if (finalIV) {
-        formData.append('iv', finalIV);
-      }
+      // Convert file to base64 for Netlify Functions
+      const fileBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          // Remove data URL prefix (e.g., "data:application/octet-stream;base64,")
+          const base64 = reader.result.split(',')[1] || reader.result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
 
-      const response = await axios.post('/api/decrypt-file', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const response = await axios.post('/api/decrypt-file', {
+        fileData: fileBase64,
+        filename: selectedFile.name,
+        key: finalKey,
+        key_size: keySize,
+        mode: mode,
+        iv: finalIV
       });
 
       const endTime = performance.now();
@@ -641,40 +649,40 @@ const Decrypt = () => {
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Generate Random Ciphertext
                     </motion.button>
-                    <div className="relative">
+                <div className="relative">
                       <textarea
-                        value={cleanedCiphertext}
-                        onChange={(e) => {
-                          const cleaned = cleanHex(e.target.value);
-                          setCiphertext(cleaned);
-                        }}
-                        onKeyDown={(e) => {
+                    value={cleanedCiphertext}
+                    onChange={(e) => {
+                      const cleaned = cleanHex(e.target.value);
+                        setCiphertext(cleaned);
+                    }}
+                    onKeyDown={(e) => {
                           if (e.key === 'Enter' && e.ctrlKey && !loading && cleanedCiphertext.length > 0 && cleanedKey.length === parseInt(keySize)/4) {
-                            handleDecrypt();
-                          }
-                        }}
+                        handleDecrypt();
+                      }
+                    }}
                         placeholder="Enter your ciphertext in hexadecimal format (e.g., 29C3505F571420F6402299B31A02D73A) or use the button above to generate one"
                         className={`input-clean w-full p-4 rounded-lg font-mono transition-all min-h-[100px] ${
                           cleanedCiphertext.length > 0 
-                            ? 'border-green-500/50 bg-green-500/5' 
-                            : ''
-                        }`}
-                        inputMode="latin"
-                        autoComplete="off"
-                        spellCheck={false}
+                        ? 'border-green-500/50 bg-green-500/5' 
+                        : ''
+                    }`}
+                    inputMode="latin"
+                    autoComplete="off"
+                    spellCheck={false}
                         rows={4}
-                      />
+                  />
                       <div className={`absolute top-2 right-2 text-xs transition-colors z-10 ${
                         cleanedCiphertext.length > 0 ? 'text-green-400' : 'text-gray-400'
-                      }`}>
+                  }`}>
                         {cleanedCiphertext.length} characters
-                      </div>
+                  </div>
                       {cleanedCiphertext.length > 0 && (
                         <div className="absolute bottom-2 right-2 z-10">
-                          <CheckCircle className="h-4 w-4 text-green-400" />
-                        </div>
-                      )}
+                      <CheckCircle className="h-4 w-4 text-green-400" />
                     </div>
+                  )}
+                </div>
                     <p className="mt-2 text-xs text-gray-400">
                       💡 Tip: Enter any hexadecimal characters (0-9, A-F). Any length is supported - ciphertext will be processed in 16-byte blocks.
                     </p>
@@ -810,15 +818,15 @@ const Decrypt = () => {
                       </div>
                     </div>
                   </label>
-                  <motion.button
+                    <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={generateRandomKey}
+                      onClick={generateRandomKey}
                     className="w-full mb-3 p-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-cyan-700 transition-all flex items-center justify-center"
-                  >
+                    >
                     <Key className="h-4 w-4 mr-2" />
                     Generate Random Key
-                  </motion.button>
+                    </motion.button>
                   <div className="relative">
                     <input
                       type={showKey ? 'text' : 'password'}
@@ -830,7 +838,7 @@ const Decrypt = () => {
                           setKey(cleaned);
                         }
                       }}
-                        onKeyDown={(e) => {
+                      onKeyDown={(e) => {
                         if (e.key === 'Enter' && e.ctrlKey && !loading && cleanedCiphertext.length > 0 && cleanedKey.length === parseInt(keySize)/4) {
                           handleDecrypt();
                         }
@@ -936,7 +944,7 @@ const Decrypt = () => {
                       </div>
                     </div>
                   </label>
-                  <motion.button
+                    <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={generateRandomIV}
@@ -944,7 +952,7 @@ const Decrypt = () => {
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Generate Random IV
-                  </motion.button>
+                    </motion.button>
                   <div className="relative">
                     <input
                       type={showIV ? 'text' : 'password'}
@@ -1090,31 +1098,31 @@ const Decrypt = () => {
 
               {/* Decrypt Button */}
               {inputMode === 'text' && (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleDecrypt}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleDecrypt}
                 disabled={loading || cleanedCiphertext.length === 0 || cleanedKey.length !== parseInt(keySize)/4 || (mode === 'CBC' && cleanedIV.length !== 32)}
                 className={`btn-primary w-full p-4 rounded-lg font-semibold text-lg flex items-center justify-center transition-all ${
                   loading || cleanedCiphertext.length === 0 || cleanedKey.length !== parseInt(keySize)/4 || (mode === 'CBC' && cleanedIV.length !== 32)
                     ? 'opacity-50 cursor-not-allowed'
                     : ''
                 }`}
-                  style={{ background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 100%)' }}
-                >
-                  {loading ? (
-                    <>
-                      <div className="spinner mr-3" />
-                      Decrypting...
-                    </>
-                  ) : (
-                    <>
-                      <Unlock className="h-5 w-5 mr-2" />
-                      Decrypt Message
+                style={{ background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 100%)' }}
+              >
+                {loading ? (
+                  <>
+                    <div className="spinner mr-3" />
+                    Decrypting...
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="h-5 w-5 mr-2" />
+                    Decrypt Message
                       <span className="ml-2 text-xs opacity-75">(Ctrl+Enter)</span>
-                    </>
-                  )}
-                </motion.button>
+                  </>
+                )}
+              </motion.button>
               )}
               
               {/* Validation Status */}
@@ -1322,8 +1330,8 @@ const Decrypt = () => {
                             ) : (
                               <div className="text-gray-600 dark:text-gray-500 text-sm">
                                 💡 Tip: Use the "Generate Random Ciphertext" button above for a quick start. Any length is supported!
-                              </div>
-                            )}
+              </div>
+            )}
                           </>
                         ) : (
                           <>
@@ -1344,7 +1352,7 @@ const Decrypt = () => {
                         )}
                       </div>
                     </div>
-                  </motion.div>
+          </motion.div>
 
                   {/* Step 2 */}
                   <motion.div
@@ -1364,7 +1372,7 @@ const Decrypt = () => {
                           : 'bg-gray-500 text-white'
                       }`}>
                         {cleanedKey.length === parseInt(keySize)/4 ? <CheckCircle className="h-5 w-5" /> : '2'}
-                      </div>
+        </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                           Enter Your Key

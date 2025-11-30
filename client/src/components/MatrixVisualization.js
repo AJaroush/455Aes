@@ -45,10 +45,10 @@ const MatrixVisualization = ({ initialState, rounds, currentRound, setCurrentRou
     ...rounds.map(round => {
       const roundMatrix = typeof round.state === 'string' ? hexToMatrix(round.state) : round.state;
       return {
-        label: `Round ${round.round} - ${round.operation}`,
+      label: `Round ${round.round} - ${round.operation}`,
         matrix: roundMatrix,
-        operation: round.operation,
-        round: round.round
+      operation: round.operation,
+      round: round.round
       };
     })
   ].filter(state => state.matrix !== null); // Filter out invalid states
@@ -115,31 +115,31 @@ const MatrixVisualization = ({ initialState, rounds, currentRound, setCurrentRou
     }
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="glass rounded-xl p-6 border border-white/20"
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="glass rounded-xl p-6 border border-white/20"
+    >
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>
         <p className="text-sm text-blue-600 dark:text-blue-300">{operation}</p>
       </div>
-        
-        <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto">
-          {matrix.map((row, rowIndex) =>
+      
+      <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto">
+        {matrix.map((row, rowIndex) =>
             row && Array.isArray(row) && row.map((cell, colIndex) => (
-              <MatrixCell
-                key={`${rowIndex}-${colIndex}`}
+            <MatrixCell
+              key={`${rowIndex}-${colIndex}`}
                 value={cell || '00'}
-                index={rowIndex * 4 + colIndex}
-                isHighlighted={operation.includes('SubBytes') || operation.includes('MixColumns')}
-              />
-            ))
-          )}
-        </div>
-      </motion.div>
-    );
+              index={rowIndex * 4 + colIndex}
+              isHighlighted={operation.includes('SubBytes') || operation.includes('MixColumns')}
+            />
+          ))
+        )}
+      </div>
+    </motion.div>
+  );
   };
 
   return (
@@ -220,21 +220,21 @@ const MatrixVisualization = ({ initialState, rounds, currentRound, setCurrentRou
 
       {/* Current Matrix */}
       {allStates.length > 0 && allStates[currentRound] ? (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentRound}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Matrix
-              matrix={allStates[currentRound].matrix}
-              title={allStates[currentRound].label}
-              operation={allStates[currentRound].operation}
-            />
-          </motion.div>
-        </AnimatePresence>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentRound}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Matrix
+            matrix={allStates[currentRound].matrix}
+            title={allStates[currentRound].label}
+            operation={allStates[currentRound].operation}
+          />
+        </motion.div>
+      </AnimatePresence>
       ) : (
         <div className="glass rounded-xl p-6 border border-white/20 text-center">
           <p className="text-gray-900 dark:text-white">No matrix data available</p>

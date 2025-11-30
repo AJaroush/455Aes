@@ -256,17 +256,25 @@ const Encrypt = () => {
     const startTime = performance.now();
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('key', finalKey);
-      formData.append('key_size', keySize);
-      formData.append('mode', 'CBC');
-      if (finalIV) {
-        formData.append('iv', finalIV);
-      }
+      // Convert file to base64 for Netlify Functions
+      const fileBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          // Remove data URL prefix (e.g., "data:application/octet-stream;base64,")
+          const base64 = reader.result.split(',')[1] || reader.result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
 
-      const response = await axios.post('/api/encrypt-file', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const response = await axios.post('/api/encrypt-file', {
+        fileData: fileBase64,
+        filename: selectedFile.name,
+        key: finalKey,
+        key_size: keySize,
+        mode: 'CBC',
+        iv: finalIV
       });
 
       const endTime = performance.now();
