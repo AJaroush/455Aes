@@ -119,7 +119,9 @@ const History = () => {
               decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
             }
           }
-          // Don't store password in sessionStorage - require it every time
+          // Store password in sessionStorage temporarily for Encrypt/Decrypt pages to use
+          // But user must enter it again next time they visit History page
+          sessionStorage.setItem('historyPassword', providedPassword);
           setShowPasswordModal(false);
           toast.success('History loaded successfully!');
         } catch (error) {
