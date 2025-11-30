@@ -17,7 +17,6 @@ import {
   Zap,
   File,
   Users,
-  TrendingUp,
   Copy,
   Check
 } from 'lucide-react';
@@ -556,17 +555,6 @@ const Tutorial = () => {
               >
                 <Eye className="h-5 w-5" />
                   <span>Try Decryption</span>
-                </motion.button>
-              </Link>
-              
-              <Link to="/compare">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="btn-secondary inline-flex items-center space-x-2 px-6 py-3 rounded-lg"
-                >
-                  <TrendingUp className="h-5 w-5" />
-                <span>Compare Variants</span>
                 </motion.button>
               </Link>
             </div>
