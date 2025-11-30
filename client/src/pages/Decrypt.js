@@ -30,7 +30,7 @@ import jsPDF from 'jspdf';
 import MatrixVisualization from '../components/MatrixVisualization';
 import RoundVisualization from '../components/RoundVisualization';
 import KeyExpansion from '../components/KeyExpansion';
-import { saveHistory, getHistoryPassword } from '../utils/historyEncryption';
+import { saveHistory, getHistoryPassword, loadHistorySafely } from '../utils/historyEncryption';
 
 const Decrypt = () => {
   const [ciphertext, setCiphertext] = useState('');
@@ -57,7 +57,7 @@ const Decrypt = () => {
 
   // Load history from localStorage on mount
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('decryptionHistory') || '[]');
+    const stored = loadHistorySafely('decryptionHistory');
     setDecryptionHistory(stored.slice(0, 10)); // Show last 10 in sidebar
   }, []);
 
@@ -327,7 +327,7 @@ const Decrypt = () => {
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
       // Save to localStorage with optional encryption
-      const stored = JSON.parse(localStorage.getItem('decryptionHistory') || '[]');
+      const stored = loadHistorySafely('decryptionHistory');
       stored.unshift(historyEntry);
       const password = getHistoryPassword();
       await saveHistory('decryptionHistory', stored.slice(0, 100), password);
@@ -401,7 +401,7 @@ const Decrypt = () => {
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       
       // Save to localStorage with optional encryption
-      const stored = JSON.parse(localStorage.getItem('decryptionHistory') || '[]');
+      const stored = loadHistorySafely('decryptionHistory');
       stored.unshift(historyEntry);
       const password = getHistoryPassword();
       await saveHistory('decryptionHistory', stored.slice(0, 100), password);

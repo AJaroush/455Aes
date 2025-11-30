@@ -173,3 +173,28 @@ export function setHistoryPassword(password) {
   }
 }
 
+/**
+ * Safely load history from localStorage (handles both encrypted and plain)
+ */
+export function loadHistorySafely(key) {
+  try {
+    const data = localStorage.getItem(key);
+    if (!data || data === '[]') {
+      return [];
+    }
+    
+    // Check if it's encrypted (base64, doesn't start with '[')
+    if (!data.startsWith('[')) {
+      // Encrypted data - return empty array (needs password to decrypt)
+      // This prevents JSON.parse errors
+      return [];
+    }
+    
+    // Plain JSON data
+    return JSON.parse(data);
+  } catch (error) {
+    console.error(`Error loading history from ${key}:`, error);
+    return [];
+  }
+}
+

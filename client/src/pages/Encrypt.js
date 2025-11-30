@@ -29,7 +29,7 @@ import jsPDF from 'jspdf';
 import MatrixVisualization from '../components/MatrixVisualization';
 import RoundVisualization from '../components/RoundVisualization';
 import KeyExpansion from '../components/KeyExpansion';
-import { saveHistory, getHistoryPassword } from '../utils/historyEncryption';
+import { saveHistory, getHistoryPassword, loadHistorySafely } from '../utils/historyEncryption';
 
 const Encrypt = () => {
   const [message, setMessage] = useState('');
@@ -59,7 +59,7 @@ const Encrypt = () => {
 
   // Load history from localStorage on mount
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('encryptionHistory') || '[]');
+    const stored = loadHistorySafely('encryptionHistory');
     setEncryptionHistory(stored.slice(0, 10)); // Show last 10 in sidebar
   }, []);
 
@@ -403,7 +403,7 @@ const Encrypt = () => {
       setEncryptionHistory([historyEntry, ...encryptionHistory.slice(0, 9)]);
       
       // Save to localStorage with optional encryption
-      const stored = JSON.parse(localStorage.getItem('encryptionHistory') || '[]');
+      const stored = loadHistorySafely('encryptionHistory');
       stored.unshift(historyEntry);
       const password = getHistoryPassword();
       await saveHistory('encryptionHistory', stored.slice(0, 100), password);
