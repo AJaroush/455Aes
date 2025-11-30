@@ -197,30 +197,81 @@ const Decrypt = () => {
     const startTime = performance.now();
 
     try {
-      // Check if it's a text file (ends with .txt or .txt.aes)
-      const isTextFile = selectedFile.name.toLowerCase().endsWith('.txt') || 
-                         selectedFile.name.toLowerCase().endsWith('.txt.aes');
-      
-      // Convert file to base64 for Netlify Functions
-      const fileBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          // Remove data URL prefix (e.g., "data:application/octet-stream;base64,")
-          const base64 = reader.result.split(',')[1] || reader.result;
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(selectedFile);
-      });
+      // Check if it's a text file (ends with .txt)
+      const isTextFile = selectedFile.name.toLowerCase().endsWith('.txt');
+      let response;
+      let plaintextHex;
 
-      const response = await axios.post('/api/decrypt-file', {
-        fileData: fileBase64,
-        filename: selectedFile.name,
-        key: finalKey,
-        key_size: keySize,
-        mode: mode,
-        iv: finalIV
-      });
+      if (isTextFile) {
+        // Read text file as text (should contain hex ciphertext)
+        const ciphertextHex = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            // Remove whitespace and newlines from hex string
+            const hex = reader.result.replace(/\s+/g, '').toUpperCase();
+            resolve(hex);
+          };
+          reader.onerror = reject;
+          reader.readAsText(selectedFile, 'UTF-8');
+        });
+
+        // Use text decryption API
+        response = await axios.post('/api/decrypt', {
+          ciphertext: ciphertextHex,
+          key: finalKey,
+          key_size: keySize
+        });
+
+        plaintextHex = response.data.final_plaintext || response.data.plaintext;
+        
+        // Convert hex to text
+        const hexBytes = plaintextHex.match(/.{1,2}/g) || [];
+        const bytes = new Uint8Array(hexBytes.map(byte => parseInt(byte, 16)));
+        const plaintext = new TextDecoder('utf-8').decode(bytes);
+        
+        // Download as text file with plaintext
+        const blob = new Blob([plaintext], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = selectedFile.name.replace('_encrypted.txt', '_decrypted.txt').replace('.txt', '_decrypted.txt');
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // Binary file - use file decryption API
+        const fileBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1] || reader.result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+
+        response = await axios.post('/api/decrypt-file', {
+          fileData: fileBase64,
+          filename: selectedFile.name,
+          key: finalKey,
+          key_size: keySize,
+          mode: mode,
+          iv: finalIV
+        });
+
+        // Download decrypted binary file
+        const binaryString = atob(response.data.decryptedData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = selectedFile.name.replace(/\.aes$/i, '');
+        a.click();
+        URL.revokeObjectURL(url);
+      }
 
       const endTime = performance.now();
       const speed = ((selectedFile.size / 1024) / ((endTime - startTime) / 1000)).toFixed(2);
@@ -234,8 +285,6 @@ const Decrypt = () => {
         mode,
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
-        hashBefore: response.data.hashBefore,
-        hashAfter: response.data.hashAfter,
         fileSize: selectedFile.size
       };
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
@@ -244,44 +293,6 @@ const Decrypt = () => {
       const stored = JSON.parse(localStorage.getItem('decryptionHistory') || '[]');
       stored.unshift(historyEntry);
       localStorage.setItem('decryptionHistory', JSON.stringify(stored.slice(0, 100))); // Keep last 100
-
-      // Download decrypted file
-      const binaryString = atob(response.data.decryptedData);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      let blob, downloadName;
-      if (isTextFile) {
-        // Convert decrypted bytes back to text
-        try {
-          const decryptedText = new TextDecoder('utf-8').decode(bytes);
-          blob = new Blob([decryptedText], { type: 'text/plain;charset=utf-8' });
-          // Remove .aes extension if present, ensure .txt extension
-          downloadName = selectedFile.name
-            .replace(/\.txt\.aes$/i, '.txt')
-            .replace(/\.aes$/i, '');
-          if (!downloadName.toLowerCase().endsWith('.txt')) {
-            downloadName += '.txt';
-          }
-        } catch (e) {
-          // If text decoding fails, treat as binary
-          blob = new Blob([bytes], { type: 'application/octet-stream' });
-          downloadName = selectedFile.name.replace(/\.aes$/i, '');
-        }
-      } else {
-        blob = new Blob([bytes], { type: 'application/octet-stream' });
-        // Remove .aes extension if present
-        downloadName = selectedFile.name.replace(/\.aes$/i, '');
-      }
-      
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = downloadName;
-      a.click();
-      URL.revokeObjectURL(url);
 
       toast.success(`File decrypted successfully! (${speed} KB/s)`);
       setSelectedFile(null);

@@ -254,7 +254,8 @@ const Encrypt = () => {
 
     try {
       const isTextFile = selectedFile.name.toLowerCase().endsWith('.txt');
-      let fileBase64;
+      let response;
+      let ciphertextHex;
 
       if (isTextFile) {
         // Read text file as UTF-8 text
@@ -265,14 +266,35 @@ const Encrypt = () => {
           reader.readAsText(selectedFile, 'UTF-8');
         });
         
-        // Convert text to UTF-8 bytes, then to base64
+        // Convert text to hex for encryption
         const textBytes = new TextEncoder().encode(fileContent);
-        // Convert Uint8Array to base64
-        const binaryString = String.fromCharCode(...textBytes);
-        fileBase64 = btoa(binaryString);
+        const messageHex = Array.from(textBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+          .toUpperCase();
+        
+        // Use text encryption API
+        response = await axios.post('/api/encrypt-advanced', {
+          message: messageHex,
+          key: finalKey,
+          key_size: keySize,
+          mode: 'CBC',
+          iv: finalIV || aes.generateRandomIV()
+        });
+        
+        ciphertextHex = response.data.ciphertext;
+        
+        // Download as text file with hex ciphertext
+        const blob = new Blob([ciphertextHex], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${selectedFile.name.replace('.txt', '')}_encrypted.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
       } else {
-        // Convert binary file to base64
-        fileBase64 = await new Promise((resolve, reject) => {
+        // Binary file - use file encryption API
+        const fileBase64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
             const base64 = reader.result.split(',')[1] || reader.result;
@@ -281,16 +303,30 @@ const Encrypt = () => {
           reader.onerror = reject;
           reader.readAsDataURL(selectedFile);
         });
-      }
 
-      const response = await axios.post('/api/encrypt-file', {
-        fileData: fileBase64,
-        filename: selectedFile.name,
-        key: finalKey,
-        key_size: keySize,
-        mode: 'CBC',
-        iv: finalIV
-      });
+        response = await axios.post('/api/encrypt-file', {
+          fileData: fileBase64,
+          filename: selectedFile.name,
+          key: finalKey,
+          key_size: keySize,
+          mode: 'CBC',
+          iv: finalIV
+        });
+
+        // Download encrypted binary file
+        const binaryString = atob(response.data.encryptedData);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${selectedFile.name}.aes`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
 
       const endTime = performance.now();
       const speed = ((selectedFile.size / 1024) / ((endTime - startTime) / 1000)).toFixed(2);
@@ -303,9 +339,7 @@ const Encrypt = () => {
         keySize,
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
-        hashBefore: response.data.hashBefore,
-        hashAfter: response.data.hashAfter,
-        mode: response.data.mode,
+        mode: isTextFile ? 'CBC' : response.data.mode,
         fileSize: selectedFile.size
       };
       setEncryptionHistory([historyEntry, ...encryptionHistory.slice(0, 9)]);
@@ -314,24 +348,6 @@ const Encrypt = () => {
       const stored = JSON.parse(localStorage.getItem('encryptionHistory') || '[]');
       stored.unshift(historyEntry);
       localStorage.setItem('encryptionHistory', JSON.stringify(stored.slice(0, 100))); // Keep last 100
-
-      // Download encrypted file
-      const binaryString = atob(response.data.encryptedData);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      // Use appropriate MIME type and extension
-      const mimeType = isTextFile ? 'text/plain' : 'application/octet-stream';
-      const extension = isTextFile ? '.txt.aes' : '.aes';
-      const blob = new Blob([bytes], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${selectedFile.name}${extension}`;
-      a.click();
-      URL.revokeObjectURL(url);
 
       toast.success(`File encrypted successfully! (${speed} KB/s)`);
       setSelectedFile(null);
