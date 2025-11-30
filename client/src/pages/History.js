@@ -67,14 +67,18 @@ const History = () => {
   }, []);
 
   const checkEncryptionStatus = () => {
-    const encrypted = isHistoryEncrypted();
-    setIsEncrypted(encrypted);
-    
     // Always clear session password when entering History page - force re-entry every time
     sessionStorage.removeItem('historyPassword');
     
+    // Check if encryption flags are set (indicates password was set before)
+    const hasEncryptFlag = localStorage.getItem('historyEncrypted') === 'true';
+    const hasDecryptFlag = localStorage.getItem('decryptionHistoryEncrypted') === 'true';
+    const encrypted = hasEncryptFlag || hasDecryptFlag;
+    
+    setIsEncrypted(encrypted);
+    
     if (encrypted) {
-      // History is encrypted - require password entry
+      // Password was set before - require password entry
       setShowPasswordModal(true);
       setShowPasswordSetupModal(false);
     } else {
