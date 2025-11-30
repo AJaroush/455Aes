@@ -74,20 +74,18 @@ const History = () => {
     const hasEncryptFlag = localStorage.getItem('historyEncrypted') === 'true';
     const hasDecryptFlag = localStorage.getItem('decryptionHistoryEncrypted') === 'true';
     
-    // Also check if there's actual encrypted data (base64, not JSON)
+    // Check if there's actual encrypted data (base64, not JSON)
     const encryptHistoryData = localStorage.getItem('encryptionHistory');
     const decryptHistoryData = localStorage.getItem('decryptionHistory');
     const hasEncryptedData = (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) ||
                             (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('['));
     
-    // Only consider encrypted if flags are set AND there's actual encrypted data
-    const encrypted = (hasEncryptFlag || hasDecryptFlag) && hasEncryptedData;
+    // Consider encrypted if flags are set (even if no data yet - password was set)
+    // OR if there's actual encrypted data (flags might be missing but data is encrypted)
+    const encrypted = (hasEncryptFlag || hasDecryptFlag) || hasEncryptedData;
     
-    // Clear stale flags if no encrypted data exists
-    if ((hasEncryptFlag || hasDecryptFlag) && !hasEncryptedData) {
-      localStorage.removeItem('historyEncrypted');
-      localStorage.removeItem('decryptionHistoryEncrypted');
-    }
+    // If flags are set but no encrypted data, keep the flags (password was set, just no history yet)
+    // Don't clear flags - they indicate password protection is enabled
     
     setIsEncrypted(encrypted);
     
