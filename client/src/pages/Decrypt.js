@@ -10,7 +10,6 @@ import {
   Upload, 
   Key,
   Lock,
-  Settings,
   ChevronDown,
   ChevronUp,
   CheckCircle,
