@@ -73,21 +73,14 @@ const History = () => {
     // Always clear session password when entering History page - force re-entry every time
     sessionStorage.removeItem('historyPassword');
     
-    // Check if there's any history data
-    const hasEncryptHistory = localStorage.getItem('encryptionHistory');
-    const hasDecryptHistory = localStorage.getItem('decryptionHistory');
-    const hasAnyHistory = (hasEncryptHistory && hasEncryptHistory !== '[]') || 
-                          (hasDecryptHistory && hasDecryptHistory !== '[]');
-    
     if (encrypted) {
-      // History is encrypted - always require password (session storage was cleared above)
+      // History is encrypted - require password entry
       setShowPasswordModal(true);
-    } else if (hasAnyHistory) {
-      // History exists but not encrypted - force password setup
-      setShowPasswordSetupModal(true);
+      setShowPasswordSetupModal(false);
     } else {
-      // No history - still force password setup for future use
+      // No password set yet - force password setup (first time)
       setShowPasswordSetupModal(true);
+      setShowPasswordModal(false);
     }
   };
 
@@ -592,7 +585,9 @@ const History = () => {
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-                  Your history is encrypted. Enter the password you set when enabling history encryption.
+                  {isEncrypted 
+                    ? 'Your history is encrypted. Enter the password you set when enabling history encryption.'
+                    : 'Please set a password to protect your history. This is required for security.'}
                 </p>
               </div>
               
