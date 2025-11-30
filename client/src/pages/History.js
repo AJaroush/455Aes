@@ -118,14 +118,23 @@ const History = () => {
           if (encryptHistoryData && encryptHistoryData !== '[]') {
             try {
               if (encryptHistoryData.startsWith('[')) {
-                // Plain JSON
+                // Plain JSON - but we expect encrypted, this might be old data
+                console.warn('Encryption history is in plain format, but encryption is enabled');
                 encryptHistory = JSON.parse(encryptHistoryData);
               } else {
                 // Encrypted (base64)
-                encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+                try {
+                  encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+                } catch (decryptErr) {
+                  console.error('Decryption failed for encryption history:', decryptErr);
+                  console.error('Data length:', encryptHistoryData.length);
+                  console.error('Data preview:', encryptHistoryData.substring(0, 50));
+                  throw decryptErr; // Re-throw to be caught by outer catch
+                }
               }
             } catch (error) {
-              console.error('Failed to decrypt encryption history:', error);
+              console.error('Failed to process encryption history:', error);
+              console.error('Error details:', error.message, error.stack);
               decryptError = true;
               encryptHistory = []; // Set to empty array if decryption fails
             }
@@ -134,14 +143,23 @@ const History = () => {
           if (decryptHistoryData && decryptHistoryData !== '[]') {
             try {
               if (decryptHistoryData.startsWith('[')) {
-                // Plain JSON
+                // Plain JSON - but we expect encrypted, this might be old data
+                console.warn('Decryption history is in plain format, but encryption is enabled');
                 decryptHistory = JSON.parse(decryptHistoryData);
               } else {
                 // Encrypted (base64)
-                decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+                try {
+                  decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+                } catch (decryptErr) {
+                  console.error('Decryption failed for decryption history:', decryptErr);
+                  console.error('Data length:', decryptHistoryData.length);
+                  console.error('Data preview:', decryptHistoryData.substring(0, 50));
+                  throw decryptErr; // Re-throw to be caught by outer catch
+                }
               }
             } catch (error) {
-              console.error('Failed to decrypt decryption history:', error);
+              console.error('Failed to process decryption history:', error);
+              console.error('Error details:', error.message, error.stack);
               decryptError = true;
               decryptHistory = []; // Set to empty array if decryption fails
             }
