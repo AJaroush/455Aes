@@ -111,35 +111,66 @@ const History = () => {
       if (isEncrypted && providedPassword) {
         // Decrypt history
         setIsLoading(true);
+        let decryptError = false;
+        
         try {
           // Check if data is encrypted (base64 format) or plain JSON
           if (encryptHistoryData && encryptHistoryData !== '[]') {
-            if (encryptHistoryData.startsWith('[')) {
-              // Plain JSON
-              encryptHistory = JSON.parse(encryptHistoryData);
-            } else {
-              // Encrypted (base64)
-              encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+            try {
+              if (encryptHistoryData.startsWith('[')) {
+                // Plain JSON
+                encryptHistory = JSON.parse(encryptHistoryData);
+              } else {
+                // Encrypted (base64)
+                encryptHistory = await decryptHistory(encryptHistoryData, providedPassword);
+              }
+            } catch (error) {
+              console.error('Failed to decrypt encryption history:', error);
+              decryptError = true;
+              encryptHistory = []; // Set to empty array if decryption fails
             }
           }
+          
           if (decryptHistoryData && decryptHistoryData !== '[]') {
-            if (decryptHistoryData.startsWith('[')) {
-              // Plain JSON
-              decryptHistory = JSON.parse(decryptHistoryData);
-            } else {
-              // Encrypted (base64)
-              decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+            try {
+              if (decryptHistoryData.startsWith('[')) {
+                // Plain JSON
+                decryptHistory = JSON.parse(decryptHistoryData);
+              } else {
+                // Encrypted (base64)
+                decryptHistory = await decryptHistory(decryptHistoryData, providedPassword);
+              }
+            } catch (error) {
+              console.error('Failed to decrypt decryption history:', error);
+              decryptError = true;
+              decryptHistory = []; // Set to empty array if decryption fails
             }
           }
+          
+          // If both failed, show error
+          if (decryptError && encryptHistory.length === 0 && decryptHistory.length === 0) {
+            toast.error('Failed to decrypt history. Wrong password?');
+            setPassword('');
+            setIsLoading(false);
+            return;
+          }
+          
+          // If at least one succeeded, continue
+          if (decryptError) {
+            toast.warning('Some history items could not be decrypted. Wrong password?');
+          } else {
+            toast.success('History loaded successfully!');
+          }
+          
           // Store password in sessionStorage temporarily for Encrypt/Decrypt pages to use
           // But user must enter it again next time they visit History page
           sessionStorage.setItem('historyPassword', providedPassword);
           setShowPasswordModal(false);
-          toast.success('History loaded successfully!');
         } catch (error) {
-          console.error('Decryption error:', error);
-          toast.error('Failed to decrypt history. Wrong password?');
+          console.error('Unexpected error during decryption:', error);
+          toast.error('Failed to load history: ' + error.message);
           setPassword('');
+          setIsLoading(false);
           return;
         } finally {
           setIsLoading(false);
