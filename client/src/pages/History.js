@@ -136,7 +136,9 @@ const History = () => {
               console.error('Failed to process encryption history:', error);
               console.error('Error details:', error.message, error.stack);
               decryptError = true;
-              encryptHistoryList = []; // Set to empty array if decryption fails
+              // Don't set to empty array - keep as undefined so we know decryption failed
+              // This preserves the encrypted data in localStorage
+              encryptHistoryList = undefined;
             }
           }
           
@@ -161,26 +163,28 @@ const History = () => {
               console.error('Failed to process decryption history:', error);
               console.error('Error details:', error.message, error.stack);
               decryptError = true;
-              decryptHistoryList = []; // Set to empty array if decryption fails
+              // Don't set to empty array - keep as undefined so we know decryption failed
+              // This preserves the encrypted data in localStorage
+              decryptHistoryList = undefined;
             }
           }
           
-          // Check if we have any history loaded
+          // Check if we have any history loaded (only count successfully decrypted arrays)
           const hasHistory = (Array.isArray(encryptHistoryList) && encryptHistoryList.length > 0) || 
                             (Array.isArray(decryptHistoryList) && decryptHistoryList.length > 0);
           
-          // If both failed and no history was loaded, show error with helpful message
-          if (decryptError && !hasHistory) {
-            const hasEncryptedData = (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) ||
-                                     (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('['));
-            
-            if (hasEncryptedData) {
-              toast.error('Failed to decrypt history. The password is incorrect or the data was encrypted with a different password. Use "Forgot password? Reset history" if you cannot remember it.');
-            } else {
-              toast.error('No encrypted history found. History may be empty or in plain format.');
-            }
+          // Check if decryption completely failed (both are undefined, meaning decryption failed)
+          const bothFailed = encryptHistoryList === undefined && decryptHistoryList === undefined;
+          const hasEncryptedData = (encryptHistoryData && encryptHistoryData !== '[]' && !encryptHistoryData.startsWith('[')) ||
+                                   (decryptHistoryData && decryptHistoryData !== '[]' && !decryptHistoryData.startsWith('['));
+          
+          // If both failed and there's encrypted data, password is wrong
+          if (bothFailed && hasEncryptedData) {
+            toast.error('Failed to decrypt history. The password is incorrect or the data was encrypted with a different password. Use "Forgot password? Reset history" if you cannot remember it.');
             setPassword('');
             setIsLoading(false);
+            // Don't set history to empty - preserve encrypted data
+            setHistory([]);
             return;
           }
           
@@ -189,7 +193,7 @@ const History = () => {
             toast.error('Some history items could not be decrypted. The password may be incorrect for those items.');
           } else if (hasHistory) {
             toast.success('History loaded successfully!');
-          } else {
+          } else if (!hasEncryptedData) {
             toast.success('History is empty. Start encrypting/decrypting to see history here.');
           }
           
@@ -242,13 +246,14 @@ const History = () => {
         return;
       }
       
-      // Combine and sort history (even if some decryption failed, show what we have)
-    const combined = [
+      // Combine and sort history (only include successfully decrypted arrays)
+      // If decryption failed (undefined), don't include it - preserve encrypted data
+      const combined = [
         ...(Array.isArray(encryptHistoryList) ? encryptHistoryList : []).map(item => ({ ...item, type: 'encrypt' })),
         ...(Array.isArray(decryptHistoryList) ? decryptHistoryList : []).map(item => ({ ...item, type: 'decrypt' }))
-    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-    setHistory(combined);
+      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      setHistory(combined);
     } catch (error) {
       console.error('Error loading history:', error);
       toast.error('Failed to load history');
