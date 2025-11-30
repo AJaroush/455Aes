@@ -273,22 +273,49 @@ const Encrypt = () => {
           .join('')
           .toUpperCase();
         
-        // Use text encryption API
+        // Use standard text encryption API for CBC mode
+        // Note: Standard encrypt endpoint uses ECB mode, so we need to use encrypt-advanced for CBC
+        // But first, let's try using encrypt-advanced which should work on Netlify
         // Generate IV if not provided
         if (!finalIV) {
           const ivResponse = await axios.post('/api/generate-key', { key_size: keySize });
           finalIV = ivResponse.data.iv;
         }
         
-        response = await axios.post('/api/encrypt-advanced', {
-          message: messageHex,
-          key: finalKey,
-          key_size: keySize,
-          mode: 'CBC',
-          iv: finalIV
-        });
-        
-        ciphertextHex = response.data.ciphertext;
+        try {
+          // Try encrypt-advanced first (works on Netlify)
+          response = await axios.post('/api/encrypt-advanced', {
+            message: messageHex,
+            key: finalKey,
+            key_size: keySize,
+            mode: 'CBC',
+            iv: finalIV
+          });
+          ciphertextHex = response.data.ciphertext;
+        } catch (error) {
+          // Fallback: if encrypt-advanced doesn't support CBC, use encrypt-file approach
+          // Convert hex to bytes, then to base64
+          const hexBytes = messageHex.match(/.{1,2}/g) || [];
+          const bytes = new Uint8Array(hexBytes.map(byte => parseInt(byte, 16)));
+          const binaryString = String.fromCharCode(...bytes);
+          const fileBase64 = btoa(binaryString);
+          
+          const fileResponse = await axios.post('/api/encrypt-file', {
+            fileData: fileBase64,
+            filename: 'temp.txt',
+            key: finalKey,
+            key_size: keySize,
+            mode: 'CBC',
+            iv: finalIV
+          });
+          
+          // Convert encrypted base64 back to hex
+          const encryptedBytes = Uint8Array.from(atob(fileResponse.data.encryptedData), c => c.charCodeAt(0));
+          ciphertextHex = Array.from(encryptedBytes)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase();
+        }
         
         // Download as text file with hex ciphertext
         const blob = new Blob([ciphertextHex], { type: 'text/plain;charset=utf-8' });
