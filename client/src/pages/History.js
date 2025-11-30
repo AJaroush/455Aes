@@ -70,6 +70,9 @@ const History = () => {
     const encrypted = isHistoryEncrypted();
     setIsEncrypted(encrypted);
     
+    // Always clear session password when entering History page - force re-entry every time
+    sessionStorage.removeItem('historyPassword');
+    
     // Check if there's any history data
     const hasEncryptHistory = localStorage.getItem('encryptionHistory');
     const hasDecryptHistory = localStorage.getItem('decryptionHistory');
@@ -77,7 +80,7 @@ const History = () => {
                           (hasDecryptHistory && hasDecryptHistory !== '[]');
     
     if (encrypted) {
-      // History is encrypted - always require password (no session storage)
+      // History is encrypted - always require password (session storage was cleared above)
       setShowPasswordModal(true);
     } else if (hasAnyHistory) {
       // History exists but not encrypted - force password setup
