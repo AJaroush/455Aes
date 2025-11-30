@@ -512,9 +512,16 @@ app.post('/api/decrypt-file', upload.single('file'), async (req, res) => {
 });
 
 // Generate random key endpoint
+app.options('/api/generate-key', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(200);
+});
+
 app.post('/api/generate-key', (req, res) => {
   try {
-    const { key_size = '128' } = req.body;
+    const { key_size = '128' } = req.body || {};
     const aes = new AESEnhanced(parseInt(key_size));
     const key = aes.generateRandomKey();
     const iv = aes.generateRandomIV();
