@@ -30,7 +30,7 @@ import jsPDF from 'jspdf';
 import MatrixVisualization from '../components/MatrixVisualization';
 import RoundVisualization from '../components/RoundVisualization';
 import KeyExpansion from '../components/KeyExpansion';
-import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted } from '../utils/historyEncryption';
+import { saveHistory, getHistoryPassword, loadHistorySafely, isHistoryEncrypted, decryptHistory } from '../utils/historyEncryption';
 
 const Encrypt = () => {
   const [message, setMessage] = useState('');

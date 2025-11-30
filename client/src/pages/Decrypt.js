@@ -1587,8 +1587,8 @@ const Decrypt = () => {
                   })}
                 </div>
 
-                {/* Tab Content */}
-                {activeTab === 'rounds' && results.rounds && (
+                {/* Tab Content - Only show visualization for ECB and CBC modes */}
+                {activeTab === 'rounds' && results.rounds && results.rounds.length > 0 && (mode === 'ECB' || mode === 'CBC') && (
                   <RoundVisualization
                     rounds={results.rounds}
                     currentRound={currentRound}
@@ -1597,17 +1597,47 @@ const Decrypt = () => {
                   />
                 )}
 
-                {activeTab === 'keys' && results.expanded_key && (
+                {activeTab === 'rounds' && (!results.rounds || results.rounds.length === 0 || (mode !== 'ECB' && mode !== 'CBC')) && (
+                  <div className="text-center py-12">
+                    <Info className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Step-by-step visualization is only available for ECB and CBC modes.
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                      Current mode: <strong>{mode}</strong>
+                    </p>
+                  </div>
+                )}
+
+                {activeTab === 'keys' && results.expanded_key && results.expanded_key.length > 0 && (mode === 'ECB' || mode === 'CBC') && (
                   <KeyExpansion keys={results.expanded_key} />
                 )}
 
-                {activeTab === 'matrix' && results.rounds && results.initial_state && (
+                {activeTab === 'keys' && (!results.expanded_key || results.expanded_key.length === 0 || (mode !== 'ECB' && mode !== 'CBC')) && (
+                  <div className="text-center py-12">
+                    <Info className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Key expansion visualization is only available for ECB and CBC modes.
+                    </p>
+                  </div>
+                )}
+
+                {activeTab === 'matrix' && results.rounds && results.initial_state && (mode === 'ECB' || mode === 'CBC') && (
                   <MatrixVisualization
                     initialState={results.initial_state}
                     rounds={results.rounds}
                     currentRound={currentRound}
                     setCurrentRound={setCurrentRound}
                   />
+                )}
+
+                {activeTab === 'matrix' && (!results.rounds || !results.initial_state || (mode !== 'ECB' && mode !== 'CBC')) && (
+                  <div className="text-center py-12">
+                    <Info className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Matrix visualization is only available for ECB and CBC modes.
+                    </p>
+                  </div>
                 )}
               </div>
             ) : (
