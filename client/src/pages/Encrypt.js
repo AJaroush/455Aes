@@ -264,7 +264,6 @@ const Encrypt = () => {
     try {
       const isTextFile = selectedFile.name.toLowerCase().endsWith('.txt');
       let response;
-      let ciphertextHex;
 
       if (isTextFile) {
         // Read text file as UTF-8 text

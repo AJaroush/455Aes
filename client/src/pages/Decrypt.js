@@ -209,7 +209,6 @@ const Decrypt = () => {
       // Check if it's a text file (ends with .txt)
       const isTextFile = selectedFile.name.toLowerCase().endsWith('.txt');
       let response;
-      let plaintextHex;
 
       if (isTextFile) {
         // Read file as binary (ArrayBuffer) to handle encrypted binary data
