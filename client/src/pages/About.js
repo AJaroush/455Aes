@@ -336,7 +336,7 @@ const About = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <motion.a
-                href="https://github.com"
+                href="https://github.com/AJaroush/455Aes"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.05 }}

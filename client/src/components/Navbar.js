@@ -1,3 +1,15 @@
+/**
+ * Navigation Bar Component
+ * 
+ * Provides the main navigation interface for the application with:
+ * - Main navigation items (Home, Encrypt, Decrypt)
+ * - Dropdown menu for additional pages (History, Tutorial, Attacks, About)
+ * - Theme toggle (dark/light mode)
+ * - GitHub link
+ * - Responsive design with mobile menu
+ * - Active route highlighting
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -20,18 +32,21 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
-  const moreDropdownRef = useRef(null);
+  // State management for mobile menu and dropdown visibility
+  const [isOpen, setIsOpen] = useState(false); // Controls mobile menu open/close
+  const [moreOpen, setMoreOpen] = useState(false); // Controls "More" dropdown open/close
+  const location = useLocation(); // Get current route for active link highlighting
+  const { theme, toggleTheme } = useTheme(); // Theme context for dark/light mode
+  const moreDropdownRef = useRef(null); // Reference to dropdown element for click-outside detection
 
+  // Primary navigation items - always visible on desktop
   const mainNavItems = [
     { path: '/', label: 'Home', icon: Shield },
     { path: '/encrypt', label: 'Encrypt', icon: Zap },
     { path: '/decrypt', label: 'Decrypt', icon: Unlock },
   ];
 
+  // Secondary navigation items - shown in "More" dropdown menu
   const moreNavItems = [
     { path: '/history', label: 'History', icon: History },
     { path: '/aes-history', label: 'AES History', icon: Calendar },
@@ -40,20 +55,27 @@ const Navbar = () => {
     { path: '/about', label: 'About', icon: Info },
   ];
 
+  // Combined navigation items for mobile menu
   const allNavItems = [...mainNavItems, ...moreNavItems];
 
-  // Close dropdown when clicking outside
+  /**
+   * Close dropdown menu when user clicks outside of it
+   * This improves UX by automatically closing the dropdown when user clicks elsewhere
+   */
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Check if click is outside the dropdown element
       if (moreDropdownRef.current && !moreDropdownRef.current.contains(event.target)) {
-        setMoreOpen(false);
+        setMoreOpen(false); // Close dropdown
       }
     };
 
+    // Only add event listener when dropdown is open
     if (moreOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
+    // Cleanup: remove event listener when component unmounts or dropdown closes
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -176,7 +198,7 @@ const Navbar = () => {
             </motion.button>
             
             <motion.a
-              href="https://github.com"
+              href="https://github.com/AJaroush/455Aes"
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.05 }}
@@ -241,7 +263,7 @@ const Navbar = () => {
                   <span className="font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                 </motion.button>
                 <motion.a
-                  href="https://github.com"
+                  href="https://github.com/AJaroush/455Aes"
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.02 }}
