@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
-  BookOpen, 
   ChevronRight, 
   ChevronDown, 
   Lock, 
@@ -18,17 +17,9 @@ import {
   Zap,
   File,
   Users,
-  Target,
   TrendingUp,
   Copy,
-  Check,
-  Calendar,
-  Globe,
-  Trophy,
-  Rocket,
-  Building2,
-  Award,
-  Star
+  Check
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 

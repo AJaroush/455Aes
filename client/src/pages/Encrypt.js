@@ -9,7 +9,6 @@ import {
   Upload, 
   Key,
   Lock,
-  Settings,
   ChevronDown,
   ChevronUp,
   CheckCircle,
@@ -19,7 +18,6 @@ import {
   File,
   FileText,
   Shield,
-  Hash,
   Clock,
   RefreshCw,
   Save,
@@ -40,7 +38,6 @@ const Encrypt = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('rounds');
   const [currentRound, setCurrentRound] = useState(0);
-  const [fileContent, setFileContent] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [usePassword, setUsePassword] = useState(false);
@@ -53,7 +50,7 @@ const Encrypt = () => {
   const [encryptionMode, setEncryptionMode] = useState('CBC'); // 'CBC', 'ECB', 'CTR', 'CFB', 'OFB', 'XTS', 'GCM'
   const [iv, setIv] = useState('');
   const [nonce, setNonce] = useState('');
-  const [useHMAC, setUseHMAC] = useState(false);
+  const [useHMAC] = useState(false);
   const [hmacValue, setHmacValue] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(null);
   const [showAdvancedModes, setShowAdvancedModes] = useState(false);

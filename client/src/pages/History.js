@@ -8,11 +8,9 @@ import {
   FileText,
   Clock,
   Trash2,
-  Filter,
   Search,
   Download,
-  Copy,
-  CheckCircle
+  Copy
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import jsPDF from 'jspdf';

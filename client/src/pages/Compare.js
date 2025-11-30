@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { GitCompare, Zap, Clock, Shield, TrendingUp, BarChart3 } from 'lucide-react';
+import { GitCompare, Shield, TrendingUp, BarChart3 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 

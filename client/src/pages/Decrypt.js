@@ -19,7 +19,6 @@ import {
   File,
   FileText,
   Shield,
-  Hash,
   Clock,
   RefreshCw,
   Save,

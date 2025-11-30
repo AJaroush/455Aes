@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Code, Users, Heart, Github, ExternalLink, Award, Zap, User, File, Lock, Key, Hash, Clock, Star, CheckCircle } from 'lucide-react';
+import { Shield, Code, Users, Heart, Github, ExternalLink, Award, Zap, User, File, Lock, Key, Hash, Star, CheckCircle } from 'lucide-react';
 
 const About = () => {
   const features = [

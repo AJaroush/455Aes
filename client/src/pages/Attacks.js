@@ -5,9 +5,7 @@ import {
   AlertTriangle, 
   Lock, 
   Eye, 
-  Zap, 
   Target,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
   Info,
@@ -16,7 +14,6 @@ import {
   Key,
   Clock,
   Cpu,
-  Radio,
   FileText
 } from 'lucide-react';
 

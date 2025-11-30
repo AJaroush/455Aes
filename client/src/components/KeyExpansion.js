@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, ChevronDown, ChevronUp, Copy, Info } from 'lucide-react';
+import { Key, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const KeyExpansion = ({ keys }) => {

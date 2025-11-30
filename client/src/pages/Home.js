@@ -12,7 +12,6 @@ import {
   Eye,
   Key,
   File,
-  FileText,
   CheckCircle,
   Star,
   Users,
