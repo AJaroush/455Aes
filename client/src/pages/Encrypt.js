@@ -305,21 +305,27 @@ const Encrypt = () => {
           iv: finalIV
         });
         
-        // Convert encrypted base64 back to hex for text file
+        // Convert encrypted base64 to binary bytes
         const encryptedBytes = Uint8Array.from(atob(response.data.encryptedData), c => c.charCodeAt(0));
-        ciphertextHex = Array.from(encryptedBytes)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('')
-          .toUpperCase();
         
-        // Include IV in the file if CBC mode (first line: IV, second line: ciphertext)
-        let fileContentToSave = ciphertextHex;
+        // For CBC mode, prepend IV as binary (16 bytes) before encrypted data
+        let fileBytes;
         if (fileMode === 'CBC' && response.data.iv) {
-          fileContentToSave = `IV:${response.data.iv}\n${ciphertextHex}`;
+          // Convert IV hex to bytes
+          const ivHex = response.data.iv.replace(/\s+/g, '').toUpperCase();
+          const ivBytes = new Uint8Array(ivHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+          
+          // Combine IV (16 bytes) + encrypted data
+          fileBytes = new Uint8Array(ivBytes.length + encryptedBytes.length);
+          fileBytes.set(ivBytes, 0);
+          fileBytes.set(encryptedBytes, ivBytes.length);
+        } else {
+          // ECB mode: just encrypted data
+          fileBytes = encryptedBytes;
         }
         
-        // Download as text file with hex ciphertext
-        const blob = new Blob([fileContentToSave], { type: 'text/plain;charset=utf-8' });
+        // Download as binary file (will show as weird characters when opened as text)
+        const blob = new Blob([fileBytes], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

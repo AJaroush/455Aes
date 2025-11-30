@@ -212,47 +212,40 @@ const Decrypt = () => {
       let plaintextHex;
 
       if (isTextFile) {
-        // Read text file as text (should contain hex ciphertext, optionally with IV on first line)
-        const fileContent = await new Promise((resolve, reject) => {
+        // Read file as binary (ArrayBuffer) to handle encrypted binary data
+        const fileBuffer = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
-          reader.readAsText(selectedFile, 'UTF-8');
+          reader.readAsArrayBuffer(selectedFile);
         });
         
-        // Parse IV if present (format: "IV:XXXXXXXX\nCIPHERTEXT" or just "CIPHERTEXT")
-        let ciphertextHex = fileContent.trim();
+        const fileBytes = new Uint8Array(fileBuffer);
+        let encryptedBytes;
         let extractedIV = finalIV;
-        let detectedMode = mode; // Default to selected mode
+        let detectedMode = mode;
         
-        // Check if file contains IV (indicates CBC mode)
-        if (ciphertextHex.startsWith('IV:')) {
-          const lines = ciphertextHex.split('\n');
-          if (lines[0].startsWith('IV:')) {
-            extractedIV = lines[0].substring(3).trim().replace(/\s+/g, '').toUpperCase();
-            ciphertextHex = lines.slice(1).join('\n').trim();
-            detectedMode = 'CBC'; // If IV is present, it's CBC mode
-          }
+        // Check if file starts with IV (16 bytes) - indicates CBC mode
+        // Try CBC mode first: first 16 bytes are IV, rest is encrypted data
+        if (fileBytes.length >= 16 && mode === 'CBC') {
+          // Extract first 16 bytes as IV
+          const ivBytes = fileBytes.slice(0, 16);
+          extractedIV = Array.from(ivBytes)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('')
+            .toUpperCase();
+          
+          // Rest is encrypted data
+          encryptedBytes = fileBytes.slice(16);
+          detectedMode = 'CBC';
         } else {
-          // No IV means it could be ECB or CBC without IV saved
-          // Use the selected mode from UI
-          detectedMode = mode;
+          // ECB mode or no IV: entire file is encrypted data
+          encryptedBytes = fileBytes;
+          detectedMode = mode === 'ECB' ? 'ECB' : mode;
         }
         
-        // Remove all whitespace from hex string
-        ciphertextHex = ciphertextHex.replace(/\s+/g, '').toUpperCase();
-        
-        // Validate hex string
-        if (!/^[0-9A-F]+$/.test(ciphertextHex)) {
-          toast.error('Invalid hex ciphertext in file');
-          setLoading(false);
-          return;
-        }
-        
-        // Convert hex ciphertext to base64 for decrypt-file endpoint
-        const hexBytes = ciphertextHex.match(/.{1,2}/g) || [];
-        const bytes = new Uint8Array(hexBytes.map(byte => parseInt(byte, 16)));
-        const binaryString = String.fromCharCode(...bytes);
+        // Convert encrypted bytes to base64 for decrypt-file endpoint
+        const binaryString = String.fromCharCode(...encryptedBytes);
         const fileBase64 = btoa(binaryString);
         
         // Use decrypt-file endpoint (supports both ECB and CBC with IV)
