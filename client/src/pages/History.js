@@ -180,13 +180,14 @@ const History = () => {
         encryptHistory = JSON.parse(encryptHistoryData || '[]');
         decryptHistory = JSON.parse(decryptHistoryData || '[]');
       } else {
-        // Encrypted but no password provided
+        // Encrypted but no password provided - can't load
         return;
       }
       
+      // Combine and sort history (even if some decryption failed, show what we have)
       const combined = [
-        ...encryptHistory.map(item => ({ ...item, type: 'encrypt' })),
-        ...decryptHistory.map(item => ({ ...item, type: 'decrypt' }))
+        ...(Array.isArray(encryptHistory) ? encryptHistory : []).map(item => ({ ...item, type: 'encrypt' })),
+        ...(Array.isArray(decryptHistory) ? decryptHistory : []).map(item => ({ ...item, type: 'decrypt' }))
       ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       
       setHistory(combined);
