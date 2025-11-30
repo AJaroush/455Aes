@@ -1696,7 +1696,7 @@ const Encrypt = () => {
                 {/* Tab Content */}
                 <div className="min-h-[400px]">
                   {activeTab === 'rounds' && (
-                    results.rounds && results.rounds.length > 0 ? (
+                    results && results.rounds && results.rounds.length > 0 && (encryptionMode === 'ECB' || encryptionMode === 'CBC') ? (
                     <RoundVisualization 
                       rounds={results.rounds}
                         autoPlay={false}
@@ -1710,16 +1710,16 @@ const Encrypt = () => {
                           Round-by-Round Visualization Not Available
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400">
-                          Advanced encryption modes ({encryptionMode}) don't support round-by-round visualization.
-                          <br />
-                          Use CBC or ECB mode to see the full encryption process step-by-step.
+                          {encryptionMode && encryptionMode !== 'ECB' && encryptionMode !== 'CBC' 
+                            ? `Advanced encryption modes (${encryptionMode}) don't support round-by-round visualization. Use CBC or ECB mode to see the full encryption process step-by-step.`
+                            : 'Round-by-round visualization is only available for ECB and CBC modes.'}
                         </p>
                       </div>
                     )
                   )}
 
                   {activeTab === 'keys' && (
-                    results.expanded_key && results.expanded_key.length > 0 ? (
+                    results && results.expanded_key && results.expanded_key.length > 0 && (encryptionMode === 'ECB' || encryptionMode === 'CBC') ? (
                     <KeyExpansion keys={results.expanded_key} />
                     ) : (
                       <div className="p-8 text-center">
@@ -1728,16 +1728,16 @@ const Encrypt = () => {
                           Key Expansion Visualization Not Available
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400">
-                          Advanced encryption modes don't support key expansion visualization.
-                          <br />
-                          Use CBC or ECB mode to see key expansion.
+                          {encryptionMode && encryptionMode !== 'ECB' && encryptionMode !== 'CBC'
+                            ? `Advanced encryption modes (${encryptionMode}) don't support key expansion visualization. Use CBC or ECB mode to see key expansion.`
+                            : 'Key expansion visualization is only available for ECB and CBC modes.'}
                         </p>
                       </div>
                     )
                   )}
 
                   {activeTab === 'matrix' && (
-                    results.initial_state && results.rounds && results.rounds.length > 0 ? (
+                    results && results.initial_state && results.rounds && results.rounds.length > 0 && (encryptionMode === 'ECB' || encryptionMode === 'CBC') ? (
                     <MatrixVisualization 
                       initialState={results.initial_state}
                       rounds={results.rounds}
@@ -1751,9 +1751,9 @@ const Encrypt = () => {
                           Matrix Visualization Not Available
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400">
-                          Advanced encryption modes ({encryptionMode}) don't support matrix visualization.
-                          <br />
-                          Use CBC or ECB mode to see the 4x4 state matrix transformations.
+                          {encryptionMode && encryptionMode !== 'ECB' && encryptionMode !== 'CBC'
+                            ? `Advanced encryption modes (${encryptionMode}) don't support matrix visualization. Use CBC or ECB mode to see the 4x4 state matrix transformations.`
+                            : 'Matrix visualization is only available for ECB and CBC modes.'}
                         </p>
                       </div>
                     )
