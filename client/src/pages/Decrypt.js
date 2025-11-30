@@ -209,6 +209,86 @@ const Decrypt = () => {
     }
   };
 
+  const handlePasswordSetup = async (e) => {
+    e.preventDefault();
+    if (!historyPassword || !confirmHistoryPassword) {
+      toast.error('Please enter and confirm password');
+      return;
+    }
+    if (historyPassword !== confirmHistoryPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    // Validate password strength
+    const strength = validatePassword(historyPassword);
+    if (strength.score < 5) {
+      const missing = [];
+      if (!strength.requirements.length) missing.push('at least 12 characters');
+      if (!strength.requirements.uppercase) missing.push('one uppercase letter');
+      if (!strength.requirements.lowercase) missing.push('one lowercase letter');
+      if (!strength.requirements.number) missing.push('one number');
+      if (!strength.requirements.special) missing.push('one special character');
+      toast.error(`Password must contain: ${missing.join(', ')}`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Get existing history (if any)
+      const encryptHistoryData = localStorage.getItem('encryptionHistory');
+      const decryptHistoryData = localStorage.getItem('decryptionHistory');
+      
+      let encryptHistoryList = [];
+      let decryptHistoryList = [];
+
+      // Handle existing history
+      if (encryptHistoryData && encryptHistoryData !== '[]') {
+        try {
+          if (encryptHistoryData.startsWith('[')) {
+            encryptHistoryList = JSON.parse(encryptHistoryData);
+          } else {
+            // Already encrypted - skip
+            encryptHistoryList = [];
+          }
+        } catch (error) {
+          encryptHistoryList = [];
+        }
+      }
+
+      if (decryptHistoryData && decryptHistoryData !== '[]') {
+        try {
+          if (decryptHistoryData.startsWith('[')) {
+            decryptHistoryList = JSON.parse(decryptHistoryData);
+          } else {
+            // Already encrypted - skip
+            decryptHistoryList = [];
+          }
+        } catch (error) {
+          decryptHistoryList = [];
+        }
+      }
+
+      // Encrypt with new password
+      await saveHistory('encryptionHistory', encryptHistoryList, historyPassword);
+      await saveHistory('decryptionHistory', decryptHistoryList, historyPassword);
+      
+      // Store password in sessionStorage for this session
+      sessionStorage.setItem('historyPassword', historyPassword);
+      
+      setShowPasswordSetupModal(false);
+      setHistoryPassword('');
+      setConfirmHistoryPassword('');
+      
+      toast.success('Password set! You can now encrypt/decrypt data.');
+    } catch (error) {
+      console.error('Password setup error:', error);
+      toast.error('Failed to set password: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const decryptFile = async () => {
     // Check if history password is set
     const hasPassword = isHistoryEncrypted();
