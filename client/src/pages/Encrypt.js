@@ -737,6 +737,92 @@ const Encrypt = () => {
 
   return (
     <div className="pt-16 min-h-screen bg-white dark:bg-black transition-colors duration-300">
+      {/* Password Setup Prompt Modal - Shows once on first visit */}
+      {showPasswordPrompt && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass rounded-2xl p-8 border-clean max-w-md w-full"
+          >
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-cyan-500/20 rounded-lg">
+                  <Lock className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Set History Password
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Protect your encryption history
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPasswordPrompt(false);
+                  localStorage.setItem('encryptPasswordPromptSeen', 'true');
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                To protect your encryption history, please set a password on the History page first. This will encrypt and secure all your encryption/decryption records.
+              </p>
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4 mb-4">
+                <div className="flex items-start space-x-2">
+                  <Info className="h-5 w-5 text-cyan-600 dark:text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    <p className="font-medium mb-1">Why set a password?</p>
+                    <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-400">
+                      <li>Encrypts your history data</li>
+                      <li>Protects sensitive information</li>
+                      <li>Required for secure storage</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <Link
+                to="/history"
+                onClick={() => {
+                  setShowPasswordPrompt(false);
+                  localStorage.setItem('encryptPasswordPromptSeen', 'true');
+                }}
+                className="flex-1"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all flex items-center justify-center space-x-2"
+                >
+                  <span>Go to History</span>
+                  <ArrowRight className="h-5 w-5" />
+                </motion.button>
+              </Link>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setShowPasswordPrompt(false);
+                  localStorage.setItem('encryptPasswordPromptSeen', 'true');
+                }}
+                className="px-4 py-3 glass text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
+              >
+                Maybe Later
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div
