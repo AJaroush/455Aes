@@ -123,7 +123,8 @@ class AESAdvanced extends AESEnhanced {
     const ctrEncrypted = this.encryptCTR(plaintext, key, iv);
     
     // Calculate authentication tag (simplified - full GCM requires GHASH)
-    const tag = crypto.createHmac('sha256', Buffer.from(key))
+    const keyBytes = typeof key === 'string' ? this.hexToBytes(key) : key;
+    const tag = crypto.createHmac('sha256', Buffer.from(keyBytes))
       .update(Buffer.from(plaintext))
       .update(additionalData || Buffer.alloc(0))
       .digest().slice(0, 16); // 16-byte tag
@@ -131,6 +132,32 @@ class AESAdvanced extends AESEnhanced {
     return {
       ciphertext: ctrEncrypted,
       tag: Array.from(tag)
+    };
+  }
+
+  async decryptGCM(ciphertext, key, iv, additionalData = null, tag = null) {
+    // GCM decryption: Same as CTR (symmetric)
+    const decrypted = this.decryptCTR(ciphertext, key, iv);
+    
+    // Verify authentication tag if provided (simplified - full GCM requires GHASH)
+    if (tag) {
+      const keyBytes = typeof key === 'string' ? this.hexToBytes(key) : key;
+      const calculatedTag = crypto.createHmac('sha256', Buffer.from(keyBytes))
+        .update(Buffer.from(decrypted))
+        .update(additionalData || Buffer.alloc(0))
+        .digest().slice(0, 16);
+      
+      const tagBytes = typeof tag === 'string' ? this.hexToBytes(tag) : tag;
+      const tagMatch = Buffer.from(tagBytes).equals(Buffer.from(calculatedTag));
+      
+      if (!tagMatch) {
+        throw new Error('GCM authentication tag verification failed');
+      }
+    }
+    
+    return {
+      plaintext: decrypted,
+      tag: tag
     };
   }
 
@@ -161,6 +188,37 @@ class AESAdvanced extends AESEnhanced {
     }
     
     return encrypted;
+  }
+
+  decryptXTS(ciphertext, key, tweak) {
+    // XTS decryption: Reverse of encryption
+    // XTS requires two keys: data key and tweak key
+    const key1 = key.slice(0, key.length / 2);
+    const key2 = key.slice(key.length / 2);
+    
+    const decrypted = [];
+    
+    // Process in 16-byte blocks
+    for (let i = 0; i < ciphertext.length; i += 16) {
+      const block = ciphertext.slice(i, i + 16);
+      
+      // Generate tweak value
+      const tweakValue = this.generateTweak(tweak, Math.floor(i / 16));
+      
+      // XEX decryption: Encrypt tweak, XOR with ciphertext, decrypt, XOR with encrypted tweak
+      const encryptedTweak = this.encryptBlock(Array.from(tweakValue), key2);
+      const xored = block.map((byte, idx) => (byte || 0) ^ (encryptedTweak[idx] || 0));
+      const decryptedBlock = this.decryptBlock(xored, key1);
+      const finalBlock = decryptedBlock.map((byte, idx) => (byte || 0) ^ (encryptedTweak[idx] || 0));
+      decrypted.push(...finalBlock);
+    }
+    
+    // Try to remove padding
+    try {
+      return this.pkcs7Unpad(decrypted);
+    } catch (e) {
+      return decrypted;
+    }
   }
 
   // ==================== Helper Methods ====================
