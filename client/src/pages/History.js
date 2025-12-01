@@ -492,7 +492,11 @@ const History = () => {
     if (window.confirm('Are you sure you want to clear all history?')) {
       localStorage.removeItem('encryptionHistory');
       localStorage.removeItem('decryptionHistory');
+      // Clear encryption flags so new history can be saved properly
+      localStorage.removeItem('historyEncrypted');
+      localStorage.removeItem('decryptionHistoryEncrypted');
       setHistory([]);
+      setIsEncrypted(false);
       toast.success('History cleared!');
     }
   };

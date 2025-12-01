@@ -137,9 +137,9 @@ export function setHistoryEncryptionStatus(encrypted) {
  */
 export async function saveHistory(key, data, password = null) {
   try {
-    // Remove sensitive data
+    // Keep fullCiphertext and fullPlaintext for PDF export, but remove other sensitive data like IV
     const sanitizedData = data.map(item => {
-      const { fullCiphertext, fullPlaintext, iv, ...safeItem } = item;
+      const { iv, ...safeItem } = item;
       return safeItem;
     });
     
