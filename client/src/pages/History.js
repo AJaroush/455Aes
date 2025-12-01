@@ -650,22 +650,16 @@ const History = () => {
           addText(`Speed: ${item.speed}`, 10);
         }
         if (item.message) {
-          const messageText = item.message.length > 50 
-            ? item.message.substring(0, 50) + '...' 
-            : item.message;
-          addText(`Message: ${messageText}`, 10);
+          addText(`Message: ${item.message}`, 10);
         }
         if (item.ciphertext) {
-          const ciphertextText = item.ciphertext.length > 50 
-            ? item.ciphertext.substring(0, 50) + '...' 
-            : item.ciphertext;
-          addText(`Ciphertext: ${ciphertextText}`, 10);
+          addText(`Ciphertext: ${item.ciphertext}`, 10);
+        }
+        if (item.plaintext) {
+          addText(`Plaintext: ${item.plaintext}`, 10);
         }
         if (item.hashBefore) {
-          const hashText = item.hashBefore.length > 50 
-            ? item.hashBefore.substring(0, 50) + '...' 
-            : item.hashBefore;
-          addText(`Hash: ${hashText}`, 10);
+          addText(`Hash: ${item.hashBefore}`, 10);
         }
         
         // Separator line
