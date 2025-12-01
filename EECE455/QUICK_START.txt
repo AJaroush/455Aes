@@ -1,0 +1,56 @@
+🚀 AES ENCRYPTION TOOL - QUICK START GUIDE
+==========================================
+
+🎯 TO LAUNCH IMMEDIATELY (Choose one):
+
+Option 1 - Universal Launcher (Recommended):
+   Double-click: LAUNCH_AES.py
+   OR run: python LAUNCH_AES.py
+
+Option 2 - Platform Specific:
+   Windows: Double-click run_aes.bat
+   Mac/Linux: Double-click run_aes.sh
+
+Option 3 - Manual:
+   python aes_implementation.py
+   Then open: http://localhost:5000
+
+==========================================
+
+📋 WHAT YOU GET:
+✅ AES-128, AES-192, and AES-256 encryption
+✅ Round-by-round visualization
+✅ Key expansion display
+✅ Beautiful web interface
+✅ Hexadecimal input/output
+✅ 4x4 state matrix display
+✅ Cross-platform compatibility
+
+==========================================
+
+🔧 REQUIREMENTS:
+- Python 3.6+ (automatically checked)
+- Flask (automatically installed)
+- Web browser (any modern browser)
+
+==========================================
+
+📖 EXAMPLE INPUTS:
+
+Message (16 bytes):
+00112233445566778899aabbccddeeff
+
+AES-128 Key (16 bytes):
+000102030405060708090a0b0c0d0e0f
+
+AES-192 Key (24 bytes):
+000102030405060708090a0b0c0d0e0f1011121314151617
+
+AES-256 Key (32 bytes):
+000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+
+==========================================
+
+🎉 ENJOY LEARNING AES!
+The tool provides comprehensive visualization of the Advanced Encryption Standard.
+Perfect for educational purposes and cryptographic analysis.
