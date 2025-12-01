@@ -649,14 +649,15 @@ const History = () => {
         if (item.speed) {
           addText(`Speed: ${item.speed}`, 10);
         }
-        if (item.message) {
-          addText(`Message: ${item.message}`, 10);
+        // Use full values for PDF export if available, otherwise use truncated display values
+        if (item.fullMessage || item.message) {
+          addText(`Message: ${item.fullMessage || item.message}`, 10);
         }
-        if (item.ciphertext) {
-          addText(`Ciphertext: ${item.ciphertext}`, 10);
+        if (item.fullCiphertext || item.ciphertext) {
+          addText(`Ciphertext: ${item.fullCiphertext || item.ciphertext}`, 10);
         }
-        if (item.plaintext) {
-          addText(`Plaintext: ${item.plaintext}`, 10);
+        if (item.fullPlaintext || item.plaintext) {
+          addText(`Plaintext: ${item.fullPlaintext || item.plaintext}`, 10);
         }
         if (item.hashBefore) {
           addText(`Hash: ${item.hashBefore}`, 10);

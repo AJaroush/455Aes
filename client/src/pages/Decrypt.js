@@ -580,17 +580,18 @@ const Decrypt = () => {
       const endTime = performance.now();
       const speed = ((processedCiphertext.length / 2 / 1024) / ((endTime - startTime) / 1000)).toFixed(2);
       
-      // Add to history (without sensitive data - fullCiphertext and fullPlaintext removed)
+      // Add to history
       const historyEntry = {
         id: Date.now(),
         type: 'text',
-        ciphertext: processedCiphertext.length > 16 ? processedCiphertext.substring(0, 16) + '...' : processedCiphertext,
+        ciphertext: processedCiphertext.length > 16 ? processedCiphertext.substring(0, 16) + '...' : processedCiphertext, // Truncated for UI display
         keySize,
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
-        plaintext: response.data.final_plaintext?.length > 16 ? response.data.final_plaintext.substring(0, 16) + '...' : response.data.final_plaintext,
+        plaintext: response.data.final_plaintext?.length > 16 ? response.data.final_plaintext.substring(0, 16) + '...' : response.data.final_plaintext, // Truncated for UI display
+        fullCiphertext: processedCiphertext, // Full value for PDF export
+        fullPlaintext: response.data.final_plaintext, // Full value for PDF export
         mode: mode
-        // Removed: fullCiphertext, fullPlaintext (sensitive data)
       };
       setDecryptionHistory([historyEntry, ...decryptionHistory.slice(0, 9)]);
       

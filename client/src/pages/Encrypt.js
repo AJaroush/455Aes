@@ -625,15 +625,15 @@ const Encrypt = () => {
       const historyEntry = {
         id: Date.now(),
         type: 'text',
-        message: cleanMessage.substring(0, 16) + '...',
+        message: cleanMessage.substring(0, 16) + '...', // Truncated for UI display
         keySize,
         timestamp: new Date().toISOString(),
         speed: speed + ' KB/s',
-        ciphertext: (response.data.final_ciphertext || response.data.ciphertext || '').substring(0, 16) + '...',
-        fullCiphertext: response.data.final_ciphertext || response.data.ciphertext,
+        ciphertext: (response.data.final_ciphertext || response.data.ciphertext || '').substring(0, 16) + '...', // Truncated for UI display
+        fullCiphertext: response.data.final_ciphertext || response.data.ciphertext, // Full value for PDF export
         mode: encryptionMode,
         hmac: hmacValue,
-        fullMessage: cleanMessage
+        fullMessage: cleanMessage // Full value for PDF export
       };
       setEncryptionHistory([historyEntry, ...encryptionHistory.slice(0, 9)]);
       
